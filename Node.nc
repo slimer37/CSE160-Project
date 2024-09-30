@@ -108,13 +108,14 @@ implementation
         // Get the neighbor list from NeighborDiscovery
         neighborCount = call NeighborDiscovery.getNeighbors(neighborList);
 
+        dbg(GENERAL_CHANNEL, "Neighbors of node %u:\n", TOS_NODE_ID);
+
         if (neighborCount == 0) {
-            dbg(NEIGHBOR_CHANNEL, "No neighbors discovered.\n");
+            dbg(GENERAL_CHANNEL, "No neighbors.\n");
         } 
         else {
-            dbg(NEIGHBOR_CHANNEL, "Discovered Neighbors:\n");
             for (i = 0; i < neighborCount; i++) {
-                dbg(NEIGHBOR_CHANNEL, "Neighbor %u: Node %u\n", i + 1, neighborList[i]);
+                dbg(GENERAL_CHANNEL, "- Node %u\n", neighborList[i]);
             }
         }
     }
