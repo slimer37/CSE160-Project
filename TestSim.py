@@ -13,6 +13,7 @@ class TestSim:
     CMD_PING = 0
     CMD_NEIGHBOR_DUMP = 1
     CMD_ROUTE_DUMP=3
+    CMD_FLOOD_SEND=10
 
     # CHANNELS - see includes/channels.h
     COMMAND_CHANNEL="command";
@@ -118,6 +119,9 @@ class TestSim:
 
     def ping(self, source, dest, msg):
         self.sendCMD(self.CMD_PING, source, "{0}{1}".format(chr(dest),msg));
+    
+    def flood(self, source, dest, msg):
+        self.sendCMD(self.CMD_FLOOD_SEND, source, "{0}{1}".format(chr(dest), msg));
 
     def neighborDMP(self, destination):
         self.sendCMD(self.CMD_NEIGHBOR_DUMP, destination, "neighbor command");
@@ -146,6 +150,7 @@ def main():
     s.ping(1, 2, "Hello, World");
     s.runTime(10);
     s.ping(1, 3, "Hi!");
+    s.flood(1, 3, "Flooding the World!");
     s.runTime(20);
 
 if __name__ == '__main__':

@@ -9,4 +9,7 @@ interface CommandHandler{
    event void setTestClient();
    event void setAppServer();
    event void setAppClient();
+
+   // Custom events
+   event void flood(uint16_t destination, uint8_t *payload);
 }
