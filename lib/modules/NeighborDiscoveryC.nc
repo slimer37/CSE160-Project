@@ -1,3 +1,5 @@
+#include "../../includes/am_types.h"
+
 configuration NeighborDiscoveryC {
     provides interface NeighborDiscovery;
 }
@@ -7,8 +9,8 @@ implementation {
 
     NeighborDiscovery = NeighborDiscoveryP;
 
-    components new AMSenderC(AM_PACK);
-    components new AMReceiverC(AM_PACK);
+    components new AMSenderC(AM_NEIGHBOR_DISCOVERY);
+    components new AMReceiverC(AM_NEIGHBOR_DISCOVERY);
     components new TimerMilliC();
 
     NeighborDiscoveryP.AMSend -> AMSenderC;
