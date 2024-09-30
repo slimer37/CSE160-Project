@@ -78,6 +78,11 @@ implementation{
                 signal CommandHandler.setTestServer();
                 break;
 
+            case CMD_FLOOD_SEND:
+                dbg(COMMAND_CHANNEL, "Command Type: Flooding\n");
+                signal CommandHandler.flood(buff[0], &buff[1]);
+                break;
+
             default:
                 dbg(COMMAND_CHANNEL, "CMD_ERROR: \"%d\" does not match any known commands.\n", msg->id);
                 break;
