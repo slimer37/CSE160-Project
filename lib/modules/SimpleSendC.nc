@@ -1,10 +1,12 @@
 #include "../../includes/am_types.h"
 
-generic configuration SimpleSendC(int channel){
+generic configuration SimpleSendC(int channel)
+{
    provides interface SimpleSend;
 }
 
-implementation{
+implementation
+{
    components new SimpleSendP();
    SimpleSend = SimpleSendP.SimpleSend;
 

@@ -9,7 +9,8 @@
 #include "../../includes/sendInfo.h"
 #include "../../includes/channels.h"
 
-generic module SimpleSendP(){
+generic module SimpleSendP()
+{
     // provides shows the interface we are implementing. See lib/interface/SimpleSend.nc
     // to see what funcitons we need to implement.
    provides interface SimpleSend;
@@ -26,7 +27,8 @@ generic module SimpleSendP(){
    uses interface Random;
 }
 
-implementation{
+implementation
+{
    uint16_t sequenceNum = 0;
    bool busy = FALSE;
    message_t pkt;
@@ -46,13 +48,15 @@ implementation{
 
    // This is a wrapper around the am sender, that adds queuing and delayed
    // sending
-   command error_t SimpleSend.send(pack msg, uint16_t dest) {
+   command error_t SimpleSend.send(pack msg, uint16_t dest) 
+   {
        // First we check to see if we have room in our queue. Since TinyOS is
        // designed for embedded systems, there is no dynamic memory. This forces
        // us to allocate space in a pool where pointers can be retrieved. See
        // SimpleSendC to see where we allocate space. Be sure to put the values
        // back into the queue once you are done.
-      if(!call Pool.empty()){
+      if(!call Pool.empty())
+      {
          sendInfo *input;
 
          input = call Pool.get();
@@ -71,10 +75,12 @@ implementation{
       return FAIL;
    }
 
-   task void sendBufferTask(){
+   task void sendBufferTask()
+   {
        // If we have a values in our queue and the radio is not busy, then
        // attempt to send a packet.
-      if(!call Queue.empty() && !busy){
+      if(!call Queue.empty() && !busy)
+      {
          sendInfo *info;
          // We are peeking since, there is a possibility that the value will not
          // be successfuly sent and we would like to continue to attempt to send
@@ -93,14 +99,16 @@ implementation{
       }
 
       // While the queue is not empty, we should be re running this task.
-      if(!call Queue.empty()){
+      if(!call Queue.empty())
+      {
          postSendTask();
       }
    }
 
    // Once the timer fires, we post the sendBufferTask(). This will allow
    // the OS's scheduler to attempt to send a packet at the next empty slot.
-   event void sendTimer.fired(){
+   event void sendTimer.fired()
+   {
       post sendBufferTask();
    }
 
@@ -115,8 +123,10 @@ implementation{
     *@return
     *	error_t - Returns SUCCESS, EBUSY when the system is too busy using the radio, or FAIL.
     */
-   error_t send(uint16_t src, uint16_t dest, pack *message){
-      if(!busy){
+   error_t send(uint16_t src, uint16_t dest, pack *message)
+   {
+      if(!busy)
+      {
           // We are putting data into the payload of the pkt struct. getPayload
           // aquires the payload pointer from &pkt and we type cast it to our own
           // packet type.
@@ -126,16 +136,21 @@ implementation{
          *msg = *message;
 
          // Attempt to send the packet.
-         if(call AMSend.send(dest, &pkt, sizeof(pack)) ==SUCCESS){
+         if(call AMSend.send(dest, &pkt, sizeof(pack)) ==SUCCESS)
+         {
             // See AMSend.sendDone(msg, error) to see what happens after.
             busy = TRUE;
             return SUCCESS;
-         }else{
+         }
+         else
+         {
              // This shouldn't really happen.
             dbg(GENERAL_CHANNEL,"The radio is busy, or something\n");
             return FAIL;
          }
-      }else{
+      }
+      else
+      {
          dbg(GENERAL_CHANNEL, "The radio is busy");
          return EBUSY;
       }
@@ -147,9 +162,11 @@ implementation{
 
    // This event occurs once the message has finished sending. We can attempt
    // to send again at that point.
-   event void AMSend.sendDone(message_t* msg, error_t error){
+   event void AMSend.sendDone(message_t* msg, error_t error)
+   {
       //Clear Flag, we can send again.
-      if(&pkt == msg){
+      if(&pkt == msg)
+      {
          busy = FALSE;
          postSendTask();
       }
