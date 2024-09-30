@@ -1,3 +1,5 @@
+#include "../../includes/protocol.h"
+
 module FloodingP {
     provides interface Flooding;
     
@@ -13,24 +15,23 @@ implementation {
     uint16_t floodSeq = 0;
     uint16_t lastFloodSeq[256];
 
-    command void Flooding.floodSend(uint16_t dest, uint8_t *payload, uint8_t len) {
-        uint8_t *msgPayload;
-        pack *myPkt;
+    void makePack(pack *Package, uint16_t src, uint16_t dest, uint16_t TTL, uint16_t protocol, uint16_t seq, uint8_t* payload, uint8_t length) 
+    {
+        Package->src = src;
+        Package->dest = dest;
+        Package->TTL = TTL;
+        Package->seq = seq;
+        Package->protocol = protocol;
+        memcpy(Package->payload, payload, length);
+    }
 
+    command void Flooding.floodSend(uint16_t dest, uint8_t *payload, uint8_t len) {
         if (busy == TRUE) {
             dbg(FLOODING_CHANNEL, "Already flooding\n");
             return;
         }
 
-        msgPayload = (uint8_t *) call Packet.getPayload(&pkt, sizeof(pack));
-        memcpy(msgPayload, payload, len);
-
-        myPkt = (pack *) msgPayload;
-
-        myPkt->src = TOS_NODE_ID;
-        myPkt->dest = dest;
-        myPkt->seq = floodSeq++;
-        myPkt->TTL = 10;  // Set initial TTL
+        makePack(&pkt, TOS_NODE_ID, dest, 10, PROTOCOL_FLOOD, floodSeq++, payload, len);
 
         if (call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(pack)) == SUCCESS) {
             dbg(FLOODING_CHANNEL, "Flooding started from node %u to dest %u\n", TOS_NODE_ID, dest);
