@@ -63,7 +63,7 @@ implementation {
         pack *receivedPkt = (pack *) payload;
         uint8_t payloadLen = len - PACKET_HEADER_LENGTH;
 
-        //Duplicate packet checking
+        // Duplicate packet checking
         if (lastFloodSeq[receivedPkt->src] >= receivedPkt->seq) {
             dbg(FLOODING_CHANNEL, "Duplicate packet from %u, ignored.\n", receivedPkt->src);
             return msg;
@@ -71,8 +71,13 @@ implementation {
 
         lastFloodSeq[receivedPkt->src] = receivedPkt->seq;
 
-        signal Flooding.receivedFlooding(receivedPkt->src, receivedPkt->payload, payloadLen);
+        // If we are the destination node, signal recieved event, do not rebroadcast
+        if (receivedPkt->dest == TOS_NODE_ID) {
+            signal Flooding.receivedFlooding(receivedPkt->src, receivedPkt->payload, payloadLen);
+            return msg;
+        }
 
+        // Rebroadcast if TTL > 0
         if (receivedPkt->TTL > 0) {
             receivedPkt->TTL--;
             memcpy(call Packet.getPayload(&pkt, sizeof(pack)), receivedPkt, sizeof(pack));
