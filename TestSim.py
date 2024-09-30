@@ -141,6 +141,8 @@ def main():
     s.addChannel(s.GENERAL_CHANNEL);
 
     s.runTime(20);
+    s.neighborDMP(1);
+    s.runTime(20);
     s.ping(1, 2, "Hello, World");
     s.runTime(10);
     s.ping(1, 3, "Hi!");

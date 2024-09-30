@@ -52,6 +52,14 @@ implementation {
         }
     }
 
+    command uint8_t NeighborDiscovery.getNeighbors(uint16_t *neighborList){
+        uint8_t i;
+        for (i = 0; i < neighborCount; i++){
+            neighborList[i] = neighbors[i];
+        }
+        return neighborCount;
+    }
+    
     event message_t* Receive.receive(message_t* msg, void* payload, uint8_t len) {
         pack *receivedPkt = (pack *) payload;
         uint8_t i;

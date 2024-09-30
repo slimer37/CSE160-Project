@@ -35,6 +35,8 @@ implementation
     // Prototypes
     void makePack(pack *Package, uint16_t src, uint16_t dest, uint16_t TTL, uint16_t protocol, uint16_t seq, uint8_t *payload, uint8_t length);
 
+    uint16_t neighborList[256]; 
+
     event void Boot.booted() 
     {
         call AMControl.start();
@@ -94,7 +96,24 @@ implementation
         }
     }
 
-    event void CommandHandler.printNeighbors() {}
+    event void CommandHandler.printNeighbors() {
+        uint8_t neighborCount;
+        uint8_t i;
+
+        // Get the neighbor list from NeighborDiscovery
+        neighborCount = call NeighborDiscovery.getNeighbors(neighborList);
+
+        if (neighborCount == 0) {
+            dbg(NEIGHBOR_CHANNEL, "No neighbors discovered.\n");
+        } 
+        else {
+            dbg(NEIGHBOR_CHANNEL, "Discovered Neighbors:\n");
+            for (i = 0; i < neighborCount; i++) {
+                dbg(NEIGHBOR_CHANNEL, "Neighbor %u: Node %u\n", i + 1, neighborList[i]);
+            }
+        }
+    }
+    
     event void CommandHandler.printRouteTable() {}
     event void CommandHandler.printLinkState() {}
     event void CommandHandler.printDistanceVector() {}
