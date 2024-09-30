@@ -12,7 +12,10 @@ module FloodingP {
 implementation {
     bool busy = FALSE;
     message_t pkt;
-    uint16_t floodSeq = 0;
+
+    // Start at 1 to pass check, since cache starts at 0
+    uint16_t floodSeq = 1;
+
     uint16_t lastFloodSeq[256];
 
     void makePack(pack *Package, uint16_t src, uint16_t dest, uint16_t TTL, uint16_t protocol, uint16_t seq, uint8_t* payload, uint8_t length) 
@@ -68,7 +71,7 @@ implementation {
 
         lastFloodSeq[receivedPkt->src] = receivedPkt->seq;
 
-        signal Flooding.receivedFlooding(receivedPkt->src, (uint8_t *)receivedPkt->payload, payloadLen);
+        signal Flooding.receivedFlooding(receivedPkt->src, receivedPkt->payload, payloadLen);
 
         if (receivedPkt->TTL > 0) {
             receivedPkt->TTL--;
