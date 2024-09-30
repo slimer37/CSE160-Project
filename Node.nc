@@ -45,7 +45,6 @@ implementation
         if (err == SUCCESS) 
         {
             dbg(GENERAL_CHANNEL, "Radio On\n");
-            call Flooding.startFlooding(AM_BROADCAST_ADDR, "PING", 4);
             call NeighborDiscovery.startDiscovery();
         } 
         else 
@@ -92,6 +91,12 @@ implementation
         {
             dbg(GENERAL_CHANNEL, "Failed to send ping, error %d\n", result);
         }
+    }
+
+    event void CommandHandler.flood(uint16_t destination, uint8_t *payload)
+    {
+        dbg(GENERAL_CHANNEL, "FLOODING EVENT \n");
+        call Flooding.floodSend(destination, payload, strlen(payload));
     }
 
     event void CommandHandler.printNeighbors() {}

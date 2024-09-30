@@ -13,7 +13,7 @@ implementation {
     uint16_t floodSeq = 0;
     uint16_t lastFloodSeq[256];
 
-    command void Flooding.startFlooding(uint16_t dest, uint8_t *payload, uint8_t len) {
+    command void Flooding.floodSend(uint16_t dest, uint8_t *payload, uint8_t len) {
         uint8_t *msgPayload;
         pack *myPkt;
 
@@ -68,7 +68,7 @@ implementation {
         if (receivedPkt->TTL > 0) {
             receivedPkt->TTL--;
             memcpy(call Packet.getPayload(&pkt, sizeof(pack)), receivedPkt, sizeof(pack));
-            
+
             if (call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(pack)) == SUCCESS) {
                 dbg(FLOODING_CHANNEL, "Rebroadcasting from node %u\n", TOS_NODE_ID);
             }
