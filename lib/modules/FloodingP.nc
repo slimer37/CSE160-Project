@@ -26,12 +26,16 @@ implementation {
     }
 
     command void Flooding.floodSend(uint16_t dest, uint8_t *payload, uint8_t len) {
+        pack *packet;
+
         if (busy == TRUE) {
             dbg(FLOODING_CHANNEL, "Already flooding\n");
             return;
         }
 
-        makePack(&pkt, TOS_NODE_ID, dest, 10, PROTOCOL_FLOOD, floodSeq++, payload, len);
+        packet = call Packet.getPayload(&pkt, sizeof(pack));
+
+        makePack(packet, TOS_NODE_ID, dest, 10, PROTOCOL_FLOOD, floodSeq++, payload, len);
 
         if (call AMSend.send(AM_BROADCAST_ADDR, &pkt, sizeof(pack)) == SUCCESS) {
             dbg(FLOODING_CHANNEL, "Flooding started from node %u to dest %u\n", TOS_NODE_ID, dest);

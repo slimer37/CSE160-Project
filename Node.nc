@@ -75,7 +75,7 @@ implementation
 
     event void Flooding.receivedFlooding(uint16_t src, uint8_t *payload, uint8_t len) 
     {
-        dbg(GENERAL_CHANNEL, "Flooding packet received from %u\n", src);
+        dbg(GENERAL_CHANNEL, "Flooding packet received from %u with payload: %s\n", src, payload);
     }
 
     event void NeighborDiscovery.neighborDiscovered(uint16_t neighborAddr) 
