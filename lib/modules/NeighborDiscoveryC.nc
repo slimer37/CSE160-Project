@@ -9,15 +9,11 @@ implementation {
 
     NeighborDiscovery = NeighborDiscoveryP;
 
-    components new AMSenderC(AM_NEIGHBOR_DISCOVERY);
     components new AMReceiverC(AM_NEIGHBOR_DISCOVERY);
     components new TimerMilliC() as discoveryTimer;
-    components new TimerMilliC() as sendTimer;
+    components new SimpleSendC(AM_NEIGHBOR_DISCOVERY) as SimpleSender;
 
-    NeighborDiscoveryP.AMSend -> AMSenderC;
-    NeighborDiscoveryP.AMPacket -> AMSenderC;
+    NeighborDiscoveryP.Sender -> SimpleSender.SimpleSend;
     NeighborDiscoveryP.Receive -> AMReceiverC;
     NeighborDiscoveryP.discoveryTimer -> discoveryTimer;
-    NeighborDiscoveryP.sendTimer -> sendTimer;
-    NeighborDiscoveryP.Packet -> AMSenderC; 
 }
