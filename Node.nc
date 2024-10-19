@@ -102,22 +102,7 @@ implementation
     }
 
     event void CommandHandler.printNeighbors() {
-        uint8_t neighborCount;
-        uint8_t i;
-
-        // Get the neighbor list from NeighborDiscovery
-        neighborCount = call NeighborDiscovery.getNeighbors(neighborList);
-
-        dbg(GENERAL_CHANNEL, "Neighbors of node %u:\n", TOS_NODE_ID);
-
-        if (neighborCount == 0) {
-            dbg(GENERAL_CHANNEL, "No neighbors.\n");
-        } 
-        else {
-            for (i = 0; i < neighborCount; i++) {
-                dbg(GENERAL_CHANNEL, "- Node %u\n", neighborList[i]);
-            }
-        }
+        call NeighborDiscovery.printNeighbors();
     }
     
     event void CommandHandler.printRouteTable() {}

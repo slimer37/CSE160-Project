@@ -1,5 +1,3 @@
-// File: NeighborDiscoveryP.nc
-
 module NeighborDiscoveryP {
     provides interface NeighborDiscovery;
 
@@ -7,12 +5,11 @@ module NeighborDiscoveryP {
     uses interface Receive;
     uses interface Packet;
     uses interface Timer<TMilli> as discoveryTimer;
+
+    uses interface List<uint16_t> as NeighborList;
 }
 
 implementation {
-    uint16_t neighbors[256];
-    uint8_t neighborCount = 0;
-
     command void NeighborDiscovery.startDiscovery() {
         call discoveryTimer.startPeriodic(2000);
         dbg(NEIGHBOR_CHANNEL, "Neighbor discovery started\n");
@@ -20,9 +17,6 @@ implementation {
 
     void sendDiscoveryPackets() {
         pack msgPayload;
-
-        // When rediscovering, reset neighbor count
-        neighborCount = 0;
 
         // Prepare the discovery packet
         msgPayload.src = TOS_NODE_ID;
@@ -62,12 +56,19 @@ implementation {
         sendDiscoveryPackets();
     }
 
-    command uint8_t NeighborDiscovery.getNeighbors(uint16_t *neighborList) {
+    command void NeighborDiscovery.printNeighbors() {
         uint8_t i;
-        for (i = 0; i < neighborCount; i++) {
-            neighborList[i] = neighbors[i];
+
+        dbg(GENERAL_CHANNEL, "Neighbors of node %u:\n", TOS_NODE_ID);
+
+        if (call NeighborList.isEmpty()) {
+            dbg(GENERAL_CHANNEL, "No neighbors.\n");
+        } 
+        else {
+            for (i = 0; i < call NeighborList.size(); i++) {
+                dbg(GENERAL_CHANNEL, "- Node %u\n", call NeighborList.get(i));
+            }
         }
-        return neighborCount;
     }
     
     event message_t* Receive.receive(message_t* msg, void* payload, uint8_t len) {
@@ -76,14 +77,14 @@ implementation {
 
         if (receivedPkt->protocol == PROTOCOL_PINGREPLY) {
             // Check if neighbor is already in the list
-            for (i = 0; i < neighborCount; i++) {
-                if (neighbors[i] == receivedPkt->src) {
-                    return msg;  // Neighbor already discovered
+            for (i = 0; i < call NeighborList.size(); i++) {
+                if (call NeighborList.get(i) == receivedPkt->src) {
+                    return msg;
                 }
             }
 
             // Add the new neighbor
-            neighbors[neighborCount++] = receivedPkt->src;
+            call NeighborList.pushback(receivedPkt->src);
             dbg(NEIGHBOR_CHANNEL, "Discovered neighbor: %u\n", receivedPkt->src);
             signal NeighborDiscovery.neighborDiscovered(receivedPkt->src);
         }
