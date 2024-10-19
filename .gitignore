@@ -5,3 +5,6 @@ build/*
 *.xml
 TOSSIM.py
 _TOSSIMmodule.so
+
+
+.DS_Store
