@@ -16,9 +16,4 @@ implementation {
     NeighborDiscoveryP.Sender -> SimpleSender.SimpleSend;
     NeighborDiscoveryP.Receive -> AMReceiverC;
     NeighborDiscoveryP.discoveryTimer -> discoveryTimer;
-
-    // List up to 256
-    components new ListC(uint16_t, 256);
-
-    NeighborDiscoveryP.NeighborList -> ListC;
 }

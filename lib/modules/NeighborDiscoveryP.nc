@@ -1,3 +1,5 @@
+#include "../../includes/neighborDiscovery.h"
+
 module NeighborDiscoveryP {
     provides interface NeighborDiscovery;
 
@@ -5,24 +7,76 @@ module NeighborDiscoveryP {
     uses interface Receive;
     uses interface Packet;
     uses interface Timer<TMilli> as discoveryTimer;
-
-    uses interface List<uint16_t> as NeighborList;
 }
 
+#define MAX_NODE_ID 256
+#define REDISCOVERY_PERIOD 400
+
 implementation {
+    NeighborInfo neighborTable[MAX_NODE_ID];
+    uint16_t seq = 0;
+
     command void NeighborDiscovery.startDiscovery() {
-        call discoveryTimer.startPeriodic(2000);
+        uint16_t id;
+        uint8_t i;
+
+        call discoveryTimer.startPeriodic(REDISCOVERY_PERIOD);
         dbg(NEIGHBOR_CHANNEL, "Neighbor discovery started\n");
+
+        for (id = 0; id < MAX_NODE_ID; id++) {
+            for (i = 0; i < ND_MOVING_AVERAGE_N; i++) {
+                neighborTable[id].responseSamples[i] = FALSE;
+            }
+
+            neighborTable[id].linkLifetime = 0;
+            neighborTable[id].recentlyReplied = FALSE;
+        }
+    }
+    
+    void recalculateLinkStatistics() {
+        uint16_t id;
+        uint8_t i;
+        uint8_t sum;
+
+        for (id = 0; id < MAX_NODE_ID; id++) {
+            for (i = ND_MOVING_AVERAGE_N - 1; i > 0; i--) {
+                neighborTable[id].responseSamples[i] = neighborTable[id].responseSamples[i - 1];
+            }
+
+            neighborTable[id].responseSamples[0] = neighborTable[id].recentlyReplied;
+            
+            neighborTable[id].recentlyReplied = FALSE;
+
+            sum = 0;
+
+            for (i = 0; i < ND_MOVING_AVERAGE_N; i++) {
+                if (neighborTable[id].responseSamples[i]) {
+                    sum++;
+                }
+            }
+
+            neighborTable[id].linkQuality = sum * 100 / ND_MOVING_AVERAGE_N;
+        }
     }
 
     void sendDiscoveryPackets() {
         pack msgPayload;
 
+        uint16_t id;
+
+        recalculateLinkStatistics();
+
+        for (id = 0; id < MAX_NODE_ID; id++) {
+            if (neighborTable[id].linkLifetime == 0) continue;
+
+            neighborTable[id].linkLifetime--;
+        }
+
         // Prepare the discovery packet
         msgPayload.src = TOS_NODE_ID;
         msgPayload.dest = AM_BROADCAST_ADDR;
         msgPayload.protocol = PROTOCOL_PING;
-        msgPayload.seq = 0;  // Sequence number for neighbor discovery
+        msgPayload.seq = seq++;  // Sequence number for neighbor discovery
 
         if (call Sender.send(msgPayload, AM_BROADCAST_ADDR) == SUCCESS) {
             dbg(NEIGHBOR_CHANNEL, "Discovery packet scheduled to be sent\n");
@@ -57,36 +111,35 @@ implementation {
     }
 
     command void NeighborDiscovery.printNeighbors() {
-        uint8_t i;
+        uint16_t id;
 
         dbg(GENERAL_CHANNEL, "Neighbors of node %u:\n", TOS_NODE_ID);
 
-        if (call NeighborList.isEmpty()) {
-            dbg(GENERAL_CHANNEL, "No neighbors.\n");
-        } 
-        else {
-            for (i = 0; i < call NeighborList.size(); i++) {
-                dbg(GENERAL_CHANNEL, "- Node %u\n", call NeighborList.get(i));
+        // Find active links
+        for (id = 0; id < MAX_NODE_ID; id++) {
+            // Positive lifetime means active link
+            if (neighborTable[id].linkLifetime > 0) {
+                dbg(GENERAL_CHANNEL, "- Node %u : %u%% | %u\n", id, neighborTable[id].linkQuality, neighborTable[id].linkLifetime);
             }
         }
+
+        dbg(GENERAL_CHANNEL, "-- End of neighbors --\n");
     }
     
     event message_t* Receive.receive(message_t* msg, void* payload, uint8_t len) {
         pack *receivedPkt = (pack *) payload;
-        uint8_t i;
+        uint16_t id;
 
         if (receivedPkt->protocol == PROTOCOL_PINGREPLY) {
-            // Check if neighbor is already in the list
-            for (i = 0; i < call NeighborList.size(); i++) {
-                if (call NeighborList.get(i) == receivedPkt->src) {
-                    return msg;
-                }
+            // If the lifetime was previously 0, this is a new neighbor.
+            if (neighborTable[receivedPkt->src].linkLifetime == 0) {
+                dbg(NEIGHBOR_CHANNEL, "Discovered neighbor: %u\n", receivedPkt->src);
+                signal NeighborDiscovery.neighborDiscovered(receivedPkt->src);
             }
 
-            // Add the new neighbor
-            call NeighborList.pushback(receivedPkt->src);
-            dbg(NEIGHBOR_CHANNEL, "Discovered neighbor: %u\n", receivedPkt->src);
-            signal NeighborDiscovery.neighborDiscovered(receivedPkt->src);
+            // Reset lifetime of this link
+            neighborTable[receivedPkt->src].linkLifetime = NEIGHBOR_LIFETIME;
+            neighborTable[receivedPkt->src].recentlyReplied = TRUE;
         }
         else if (receivedPkt->protocol == PROTOCOL_PING) {
             sendDiscoveryReply(receivedPkt->src);
