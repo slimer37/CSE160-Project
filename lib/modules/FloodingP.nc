@@ -129,7 +129,8 @@ implementation {
             lastFloodSeq[receivedPkt->src] = receivedPkt->seq;
 
             // If we are the destination node, send ACK and signal event
-            if (receivedPkt->dest == TOS_NODE_ID) {
+            // AND support total intentional flooding through AM_BROADCAST_ADDR
+            if (receivedPkt->dest == TOS_NODE_ID || receivedPkt->dest == AM_BROADCAST_ADDR) {
                 if (receivedPkt->protocol == PROTOCOL_FLOODREPLY) {
                     // Handle ACK packet
                     if (*(uint16_t*)receivedPkt->payload == floodSeq - 1) {
