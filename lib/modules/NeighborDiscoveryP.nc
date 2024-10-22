@@ -9,11 +9,10 @@ module NeighborDiscoveryP {
     uses interface Timer<TMilli> as discoveryTimer;
 }
 
-#define MAX_NODE_ID 256
 #define REDISCOVERY_PERIOD 400
 
 implementation {
-    NeighborInfo neighborTable[MAX_NODE_ID];
+    NeighborInfo neighborTable[NEIGHBOR_TABLE_LENGTH];
     uint16_t seq = 0;
 
     command void NeighborDiscovery.startDiscovery() {
@@ -23,7 +22,7 @@ implementation {
         call discoveryTimer.startPeriodic(REDISCOVERY_PERIOD);
         dbg(NEIGHBOR_CHANNEL, "Neighbor discovery started\n");
 
-        for (id = 0; id < MAX_NODE_ID; id++) {
+        for (id = 0; id < NEIGHBOR_TABLE_LENGTH; id++) {
             for (i = 0; i < ND_MOVING_AVERAGE_N; i++) {
                 neighborTable[id].responseSamples[i] = FALSE;
             }
@@ -38,7 +37,7 @@ implementation {
         uint8_t i;
         uint8_t sum;
 
-        for (id = 0; id < MAX_NODE_ID; id++) {
+        for (id = 0; id < NEIGHBOR_TABLE_LENGTH; id++) {
             for (i = ND_MOVING_AVERAGE_N - 1; i > 0; i--) {
                 neighborTable[id].responseSamples[i] = neighborTable[id].responseSamples[i - 1];
             }
@@ -66,7 +65,7 @@ implementation {
 
         recalculateLinkStatistics();
 
-        for (id = 0; id < MAX_NODE_ID; id++) {
+        for (id = 0; id < NEIGHBOR_TABLE_LENGTH; id++) {
             if (neighborTable[id].linkLifetime == 0) continue;
 
             neighborTable[id].linkLifetime--;
@@ -116,7 +115,7 @@ implementation {
         dbg(GENERAL_CHANNEL, "Neighbors of node %u:\n", TOS_NODE_ID);
 
         // Find active links
-        for (id = 0; id < MAX_NODE_ID; id++) {
+        for (id = 0; id < NEIGHBOR_TABLE_LENGTH; id++) {
             // Positive lifetime means active link
             if (neighborTable[id].linkLifetime > 0) {
                 dbg(GENERAL_CHANNEL, "- Node %u : %u%% | %u\n", id, neighborTable[id].linkQuality, neighborTable[id].linkLifetime);
