@@ -12,7 +12,8 @@ module NeighborDiscoveryP {
 #define REDISCOVERY_PERIOD 400
 
 implementation {
-    NeighborInfo neighborTable[NEIGHBOR_TABLE_LENGTH];
+    uint8_t neighborQualityTable[NEIGHBOR_TABLE_LENGTH];
+    NeighborStats neighborStats[NEIGHBOR_TABLE_LENGTH];
     uint16_t seq = 0;
 
     command void NeighborDiscovery.startDiscovery() {
@@ -24,11 +25,12 @@ implementation {
 
         for (id = 0; id < NEIGHBOR_TABLE_LENGTH; id++) {
             for (i = 0; i < ND_MOVING_AVERAGE_N; i++) {
-                neighborTable[id].responseSamples[i] = FALSE;
+                neighborStats[id].responseSamples[i] = FALSE;
             }
 
-            neighborTable[id].linkLifetime = 0;
-            neighborTable[id].recentlyReplied = FALSE;
+            neighborQualityTable[id] = 0;
+            neighborStats[id].linkLifetime = 0;
+            neighborStats[id].recentlyReplied = FALSE;
         }
     }
     
@@ -39,22 +41,22 @@ implementation {
 
         for (id = 0; id < NEIGHBOR_TABLE_LENGTH; id++) {
             for (i = ND_MOVING_AVERAGE_N - 1; i > 0; i--) {
-                neighborTable[id].responseSamples[i] = neighborTable[id].responseSamples[i - 1];
+                neighborStats[id].responseSamples[i] = neighborStats[id].responseSamples[i - 1];
             }
 
-            neighborTable[id].responseSamples[0] = neighborTable[id].recentlyReplied;
+            neighborStats[id].responseSamples[0] = neighborStats[id].recentlyReplied;
             
-            neighborTable[id].recentlyReplied = FALSE;
+            neighborStats[id].recentlyReplied = FALSE;
 
             sum = 0;
 
             for (i = 0; i < ND_MOVING_AVERAGE_N; i++) {
-                if (neighborTable[id].responseSamples[i]) {
+                if (neighborStats[id].responseSamples[i]) {
                     sum++;
                 }
             }
 
-            neighborTable[id].linkQuality = sum * 100 / ND_MOVING_AVERAGE_N;
+            neighborQualityTable[id] = sum * 100 / ND_MOVING_AVERAGE_N;
         }
     }
 
@@ -66,9 +68,9 @@ implementation {
         recalculateLinkStatistics();
 
         for (id = 0; id < NEIGHBOR_TABLE_LENGTH; id++) {
-            if (neighborTable[id].linkLifetime == 0) continue;
+            if (neighborStats[id].linkLifetime == 0) continue;
 
-            neighborTable[id].linkLifetime--;
+            neighborStats[id].linkLifetime--;
         }
 
         // Prepare the discovery packet
@@ -117,8 +119,8 @@ implementation {
         // Find active links
         for (id = 0; id < NEIGHBOR_TABLE_LENGTH; id++) {
             // Positive lifetime means active link
-            if (neighborTable[id].linkLifetime > 0) {
-                dbg(GENERAL_CHANNEL, "- Node %u : %u%% | %u\n", id, neighborTable[id].linkQuality, neighborTable[id].linkLifetime);
+            if (neighborStats[id].linkLifetime > 0) {
+                dbg(GENERAL_CHANNEL, "- Node %u : %u%% | %u\n", id, neighborQualityTable[id], neighborStats[id].linkLifetime);
             }
         }
 
@@ -131,14 +133,14 @@ implementation {
 
         if (receivedPkt->protocol == PROTOCOL_PINGREPLY) {
             // If the lifetime was previously 0, this is a new neighbor.
-            if (neighborTable[receivedPkt->src].linkLifetime == 0) {
+            if (neighborStats[receivedPkt->src].linkLifetime == 0) {
                 dbg(NEIGHBOR_CHANNEL, "Discovered neighbor: %u\n", receivedPkt->src);
                 signal NeighborDiscovery.neighborDiscovered(receivedPkt->src);
             }
 
             // Reset lifetime of this link
-            neighborTable[receivedPkt->src].linkLifetime = NEIGHBOR_LIFETIME;
-            neighborTable[receivedPkt->src].recentlyReplied = TRUE;
+            neighborStats[receivedPkt->src].linkLifetime = NEIGHBOR_LIFETIME;
+            neighborStats[receivedPkt->src].recentlyReplied = TRUE;
         }
         else if (receivedPkt->protocol == PROTOCOL_PING) {
             sendDiscoveryReply(receivedPkt->src);

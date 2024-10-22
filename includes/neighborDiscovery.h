@@ -6,8 +6,6 @@
 #define ND_MOVING_AVERAGE_N 5
 
 typedef struct {
-    // Link quality percentage as integer from 0-100
-    uint8_t linkQuality;
 
     bool responseSamples[ND_MOVING_AVERAGE_N];
 
@@ -15,4 +13,5 @@ typedef struct {
     uint8_t linkLifetime;
 
     bool recentlyReplied;
-} NeighborInfo;
+
+} NeighborStats;
