@@ -24,7 +24,7 @@ implementation {
     command void RoutedSend.send(uint16_t dest, uint8_t *payload, uint8_t len) {
         uint16_t nextHop;
 
-        makePack(&packet, TOS_NODE_ID, dest, MAX_TTL, PROTOCOL_LINKSTATE, floodSeq++, payload, len);
+        makePack(&packet, TOS_NODE_ID, dest, MAX_TTL, PROTOCOL_PING, floodSeq++, payload, len);
 
         nextHop = call LinkStateRouting.getNextHop(dest);
 
@@ -41,15 +41,20 @@ implementation {
     }
 
     event message_t* Receive.receive(message_t* msg, void* payload, uint8_t len) {
-        uint16_t dest;
+        uint16_t nextHop;
         pack *receivedPacket = (pack*)payload;
 
         if (receivedPacket->protocol != PROTOCOL_PING) return msg;
 
-        dest = call LinkStateRouting.getNextHop(receivedPacket->dest);
+        if (receivedPacket->dest == TOS_NODE_ID) {
+            signal RoutedSend.received(receivedPacket->src, receivedPacket->payload, len - PACKET_HEADER_LENGTH);
+            return msg;
+        }
 
-        if (call SimpleSend.send(*receivedPacket, dest) == SUCCESS) {
-            dbg(ROUTING_CHANNEL, "Forwarding packet from %u\n", receivedPacket->src);
+        nextHop = call LinkStateRouting.getNextHop(receivedPacket->dest);
+
+        if (call SimpleSend.send(*receivedPacket, nextHop) == SUCCESS) {
+            dbg(ROUTING_CHANNEL, "Forwarding packet intended for %u to %u\n", receivedPacket->dest, nextHop);
         } else {
             dbg(ROUTING_CHANNEL, "Failed to forward packet from %u\n", receivedPacket->src);
         }
