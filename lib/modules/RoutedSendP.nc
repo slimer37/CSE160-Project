@@ -54,7 +54,7 @@ implementation {
         nextHop = call LinkStateRouting.getNextHop(receivedPacket->dest);
 
         if (call SimpleSend.send(*receivedPacket, nextHop) == SUCCESS) {
-            dbg(ROUTING_CHANNEL, "Forwarding packet intended for %u to %u\n", receivedPacket->dest, nextHop);
+            dbg(ROUTING_CHANNEL, "Fwd packet for %u from %u to %u\n", receivedPacket->dest, TOS_NODE_ID, nextHop);
         } else {
             dbg(ROUTING_CHANNEL, "Failed to forward packet from %u\n", receivedPacket->src);
         }

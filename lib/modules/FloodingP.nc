@@ -43,7 +43,7 @@ implementation {
 
     command void Flooding.floodSend(uint16_t dest, uint8_t *payload, uint8_t len) {
         if (busy) {
-            dbg(GENERAL_CHANNEL, "Already flooding\n");
+            dbg(FLOODING_CHANNEL, "Already flooding\n");
             return;
         }
 

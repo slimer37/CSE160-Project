@@ -95,6 +95,10 @@ implementation {
 
         // 1. initialization
 
+        for (id = 0; id < MAX_NODE_ID; id++) {
+            nextHopTable[id] = 0;
+        }
+
         hop.dest = next;
         hop.cost = 0;
         hop.nextHop = next;
@@ -120,6 +124,12 @@ implementation {
                     hop.nextHop = id;
                 } else {
                     hop.nextHop = next;
+                    // While the next hop for this node is not a neighbor of the source,
+                    // move through the confirmed routing table (of shortest path hops)
+                    // until we reach a neighbor of the source
+                    while (edgeLength(TOS_NODE_ID, hop.nextHop) > 100) {
+                        hop.nextHop = nextHopTable[hop.nextHop];
+                    }
                 }
 
                 if (isTentative(id, &tentativeListLocation)) {
@@ -153,18 +163,9 @@ implementation {
             hop = call Tentative.pop(tentativeListLocation);
             call Confirmed.pushback(hop);
 
-            next = hop.dest;
-        }
-
-        // Update routing table
-
-        for (id = 0; id < MAX_NODE_ID; id++) {
-            nextHopTable[id] = 0;
-        }
-
-        for (i = 0; i < call Confirmed.size(); i++) {
-            hop = call Confirmed.get(i);
             nextHopTable[hop.dest] = hop.nextHop;
+
+            next = hop.dest;
         }
     }
 
