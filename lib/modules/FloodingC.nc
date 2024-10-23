@@ -10,14 +10,14 @@ implementation {
     components FloodingP;
     Flooding = FloodingP;
 
-    components new AMSenderC(AM_FLOODING);
     components new AMReceiverC(AM_FLOODING);
     components new TimerMilliC();
 
-    FloodingP.AMSend -> AMSenderC;
-    FloodingP.AMPacket -> AMSenderC;
+    components new SimpleSendC(AM_FLOODING) as SimpleSend;
+
+    FloodingP.SimpleSend -> SimpleSend;
+
     FloodingP.Receive -> AMReceiverC;
-    FloodingP.Packet -> AMSenderC;
 
     FloodingP.resendTimer -> TimerMilliC;
 }
