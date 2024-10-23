@@ -41,6 +41,24 @@ implementation{
 		}
 	}
 
+	// Added by me
+	command t List.pop(uint16_t index){
+		t returnVal;
+		uint16_t i;
+
+		returnVal = container[index];
+
+		if (size > 0) {
+			for (i = index; i < size - 1; i++) {
+				container[i] = container[i+1];
+			}
+
+			size--;
+		}
+
+		return returnVal;
+	}
+
 	command t List.popback(){
 		t returnVal;
 

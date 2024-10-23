@@ -16,6 +16,7 @@ interface List<t>{
     */
    command void pushback(t input);
 	command void pushfront(t input);
+	command t pop(uint16_t index);
 	command t popback();
 	command t popfront();
 	command t front();

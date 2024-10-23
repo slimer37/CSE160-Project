@@ -23,7 +23,7 @@ module Node
     uses interface SimpleSend as Sender;
 
     uses interface LinkStateRouting;
-    
+
     uses interface Flooding;
     uses interface NeighborDiscovery;
 

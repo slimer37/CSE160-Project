@@ -16,6 +16,10 @@ implementation {
     NeighborStats neighborStats[NEIGHBOR_TABLE_LENGTH];
     uint16_t seq = 0;
 
+    command uint8_t* NeighborDiscovery.retrieveLinkState() {
+        return neighborQualityTable;
+    }
+
     command void NeighborDiscovery.startDiscovery() {
         uint16_t id;
         uint8_t i;
