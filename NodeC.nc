@@ -37,6 +37,8 @@ implementation
     Node.NeighborDiscovery -> NeighborDiscoveryC;
 
     components LinkStateRoutingC;
+    components RoutedSendC;
 
     Node.LinkStateRouting -> LinkStateRoutingC;
+    Node.RoutedSend -> RoutedSendC;
 }

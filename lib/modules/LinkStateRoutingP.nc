@@ -17,8 +17,14 @@ implementation {
     uint16_t costs[MAX_NODE_ID][MAX_NODE_ID];
     uint16_t nextHopTable[MAX_NODE_ID];
 
+    bool floodRequested = FALSE;
+
+    command uint16_t LinkStateRouting.getNextHop(uint16_t dest) {
+        return nextHopTable[dest];
+    }
+
     command void LinkStateRouting.startTimer() {
-        call refloodTimer.startPeriodic(1000);
+        call refloodTimer.startPeriodic(500);
     }
 
     // l(s, n) as in textbook
@@ -181,18 +187,22 @@ implementation {
     }
     
     event void NeighborDiscovery.neighborDiscovered(uint16_t neighborAddr) {
+        floodRequested = TRUE;
         //floodLinkState();
     }
 
     event void refloodTimer.fired() {
+        if (!floodRequested) return;
+
         floodLinkState();
+        floodRequested = FALSE;
     }
 
     event void Flooding.receivedFlooding(uint16_t src, uint8_t *payload, uint8_t len) {
         uint16_t i;
 
         // copy the link qualities into appropriate row
-        memcpy(linkQualityTable[src], payload, MAX_NODE_ID);
+        memcpy(linkQualityTable[src], payload, len);
 
         // if (TOS_NODE_ID == 2) {
         //     dbg(GENERAL_CHANNEL, "GOT LSP FROM %u\n:", src);

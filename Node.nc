@@ -23,6 +23,7 @@ module Node
     uses interface SimpleSend as Sender;
 
     uses interface LinkStateRouting;
+    uses interface RoutedSend;
 
     uses interface Flooding;
     uses interface NeighborDiscovery;
@@ -81,7 +82,7 @@ implementation
         dbg(FLOODING_CHANNEL, "Flooding packet received from %u with payload: %s\n", src, payload);
     }
 
-    event void LinkStateRouting.received(uint16_t src, uint8_t *payload, uint8_t len) 
+    event void RoutedSend.received(uint16_t src, uint8_t *payload, uint8_t len) 
     {
         dbg(GENERAL_CHANNEL, "Packet received via LSR from %u with payload: %s\n", src, payload);
     }
@@ -93,14 +94,16 @@ implementation
 
     event void CommandHandler.ping(uint16_t destination, uint8_t *payload) 
     {
-        error_t result;
-        dbg(GENERAL_CHANNEL, "PING EVENT \n");
-        makePack(&sendPackage, TOS_NODE_ID, destination, 0, 0, 0, payload, PACKET_MAX_PAYLOAD_SIZE);
-        result = call Sender.send(sendPackage, destination);
-        if (result != SUCCESS) 
-        {
-            dbg(GENERAL_CHANNEL, "Failed to send ping, error %d\n", result);
-        }
+        // error_t result;
+        // dbg(GENERAL_CHANNEL, "PING EVENT \n");
+        // makePack(&sendPackage, TOS_NODE_ID, destination, 0, 0, 0, payload, PACKET_MAX_PAYLOAD_SIZE);
+        // result = call Sender.send(sendPackage, destination);
+        // if (result != SUCCESS) 
+        // {
+        //     dbg(GENERAL_CHANNEL, "Failed to send ping, error %d\n", result);
+        // }
+
+        call RoutedSend.send(destination, payload, PACKET_MAX_PAYLOAD_SIZE);
     }
 
     event void CommandHandler.flood(uint16_t destination, uint8_t *payload)

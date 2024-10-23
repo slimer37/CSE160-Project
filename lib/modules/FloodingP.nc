@@ -116,8 +116,7 @@ implementation {
                     // Send ACK back to source
                     sendAck(receivedPkt->src, receivedPkt->seq);
 
-                    // fix len
-                    signal Flooding.receivedFlooding(receivedPkt->src, receivedPkt->payload, len);
+                    signal Flooding.receivedFlooding(receivedPkt->src, receivedPkt->payload, len - PACKET_HEADER_LENGTH);
                 }
 
                 return msg;
