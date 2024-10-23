@@ -112,7 +112,10 @@ implementation
         call NeighborDiscovery.printNeighbors();
     }
     
-    event void CommandHandler.printRouteTable() {}
+    event void CommandHandler.printRouteTable() {
+        call LinkStateRouting.printRoutingTable();
+    }
+    
     event void CommandHandler.printLinkState() {}
     event void CommandHandler.printDistanceVector() {}
     event void CommandHandler.setTestServer() {}

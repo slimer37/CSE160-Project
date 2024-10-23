@@ -1,7 +1,7 @@
 // Starting value for link lifetimes
 #define NEIGHBOR_LIFETIME 5
 
-#define NEIGHBOR_TABLE_LENGTH 256
+#define NEIGHBOR_TABLE_LENGTH PACKET_MAX_PAYLOAD_SIZE
 
 #define ND_MOVING_AVERAGE_N 5
 

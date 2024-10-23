@@ -15,12 +15,6 @@ implementation {
     uint16_t costs[MAX_NODE_ID][MAX_NODE_ID];
     uint16_t nextHopTable[MAX_NODE_ID];
 
-    void floodLinkState() {
-        uint8_t linkState = call NeighborDiscovery.retrieveLinkState();
-
-        call Flooding.floodSend(AM_BROADCAST_ADDR, linkState, MAX_NODE_ID);
-    }
-
     // l(s, n) as in textbook
     uint8_t edgeLength(uint16_t s, uint16_t n) {
         // cost based on link quality
@@ -58,7 +52,7 @@ implementation {
         return FALSE;
     }
 
-    void printRoutingTable() {
+    command void LinkStateRouting.printRoutingTable() {
         uint16_t i;
         ProbableHop hop;
 
@@ -102,12 +96,18 @@ implementation {
             for (id = 0; id < MAX_NODE_ID; id++) {
                 // Iterate through neighbors
                 if (edgeLength(next, id) > 100) continue;
+                // else if (TOS_NODE_ID==2) dbg(GENERAL_CHANNEL, "%u -> %u: len: %u\n", next, id, edgeLength(next, id));
 
                 cost = costs[TOS_NODE_ID][next] + costs[next][id];
 
                 hop.dest = id;
                 hop.cost = cost;
-                hop.nextHop = next;
+
+                if (next == TOS_NODE_ID) {
+                    hop.nextHop = id;
+                } else {
+                    hop.nextHop = next;
+                }
 
                 if (isTentative(id, &tentativeListLocation)) {
                     if (cost < costs[TOS_NODE_ID][id]) {
@@ -118,6 +118,7 @@ implementation {
 
                 if (!isConfirmed(id)) {
                     call Tentative.pushback(hop);
+                    // if (TOS_NODE_ID == 2) dbg(GENERAL_CHANNEL, "pushback %u %u %u\n", hop.dest, hop.cost, hop.nextHop);
                 }
             }
 
@@ -135,16 +136,30 @@ implementation {
                 }
             }
 
-            hop = call Tentative.get(tentativeListLocation);
+            // Move the minimum cost hop to the confirmed list
+            hop = call Tentative.pop(tentativeListLocation);
+            call Confirmed.pushback(hop);
 
             next = hop.dest;
+        }
+    }
 
-            // Move the minimum cost hop to the confirmed list
-            call Confirmed.pushback(hop);
-            call Tentative.pop(tentativeListLocation);
+    void floodLinkState() {
+        uint16_t i;
+        uint8_t *linkState = call NeighborDiscovery.retrieveLinkState();
+
+        if (TOS_NODE_ID >= 0 && TOS_NODE_ID <= 3) {
+            dbg(GENERAL_CHANNEL, "SENDING LSP FROM %u\n:", TOS_NODE_ID);
+            for (i = 0; i < 5; i++) {
+                dbg(GENERAL_CHANNEL, "%u - c %u\n", i, linkState[i]);
+            }
         }
 
-        printRoutingTable();
+        memcpy(linkQualityTable[TOS_NODE_ID], linkState, NEIGHBOR_TABLE_LENGTH);
+
+        call Flooding.floodSend(AM_BROADCAST_ADDR, linkState, NEIGHBOR_TABLE_LENGTH);
+
+        doForwardSearch();
     }
     
     // redistribute link state whenever neighbor list changes
@@ -153,8 +168,17 @@ implementation {
     }
 
     event void Flooding.receivedFlooding(uint16_t src, uint8_t *payload, uint8_t len) {
+        uint16_t i;
+
         // copy the link qualities into appropriate row
         memcpy(linkQualityTable[src], payload, MAX_NODE_ID);
+
+        if (TOS_NODE_ID == 2) {
+            dbg(GENERAL_CHANNEL, "GOT LSP FROM %u\n:", src);
+            for (i = 0; i < 5; i++) {
+                dbg(GENERAL_CHANNEL, "%u - c %u\n", i, payload[i]);
+            }
+        }
 
         doForwardSearch();
     }

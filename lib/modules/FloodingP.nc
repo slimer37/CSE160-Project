@@ -34,7 +34,7 @@ implementation {
         ackPacket = call Packet.getPayload(&ackPkt, sizeof(pack));
         
         // Put the sequence number of the original message as the payload
-        makePack(ackPacket, TOS_NODE_ID, dest, 10, PROTOCOL_FLOODREPLY, floodSeq++, (uint8_t*)&seq, 2);
+        makePack(ackPacket, TOS_NODE_ID, dest, MAX_TTL, PROTOCOL_FLOODREPLY, floodSeq++, (uint8_t*)&seq, 2);
 
         dbg(FLOODING_CHANNEL, "Formed ack pack with seq: %u\n", *(uint16_t*)ackPacket->payload);
 
@@ -144,7 +144,8 @@ implementation {
                     // Send ACK back to source
                     sendAck(receivedPkt->src, receivedPkt->seq);
 
-                    signal Flooding.receivedFlooding(receivedPkt->src, (uint8_t*)receivedPkt->payload, len);
+                    // fix len
+                    signal Flooding.receivedFlooding(receivedPkt->src, receivedPkt->payload, len);
                 }
 
                 return msg;
