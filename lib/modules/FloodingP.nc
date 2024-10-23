@@ -36,7 +36,7 @@ implementation {
         // Put the sequence number of the original message as the payload
         makePack(ackPacket, TOS_NODE_ID, dest, 10, PROTOCOL_FLOODREPLY, floodSeq++, (uint8_t*)&seq, 2);
 
-        dbg(GENERAL_CHANNEL, "Formed ack pack with seq: %u\n", *(uint16_t*)ackPacket->payload);
+        dbg(FLOODING_CHANNEL, "Formed ack pack with seq: %u\n", *(uint16_t*)ackPacket->payload);
 
         if (call AMSend.send(AM_BROADCAST_ADDR, &ackPkt, sizeof(pack)) == SUCCESS) {
             dbg(FLOODING_CHANNEL, "Sending ACK to %u\n", dest);
@@ -144,7 +144,7 @@ implementation {
                     // Send ACK back to source
                     sendAck(receivedPkt->src, receivedPkt->seq);
 
-                    signal Flooding.receivedFlooding(receivedPkt->src, receivedPkt->payload, len);
+                    signal Flooding.receivedFlooding(receivedPkt->src, (uint8_t*)receivedPkt->payload, len);
                 }
 
                 return msg;
