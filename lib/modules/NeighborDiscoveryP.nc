@@ -60,6 +60,10 @@ implementation {
                 }
             }
 
+            if (sum == 0) {
+                signal NeighborDiscovery.neighborLost(id);
+            }
+
             neighborQualityTable[id] = sum * 100 / ND_MOVING_AVERAGE_N;
         }
     }

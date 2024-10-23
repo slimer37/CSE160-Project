@@ -150,6 +150,11 @@ def main():
     s.runTime(10);
     s.ping(1, 9, "Hello, World");
     s.runTime(1000);
+    s.routeDMP(1);
+    s.moteOff(4);
+    s.runTime(1000);
+    s.ping(1, 9, "Hello, World");
+    s.runTime(1000);
     # s.runTime(10000);
     # s.ping(1, 3, "Hi!");
     # s.flood(1, 9, "Flooding the World!");

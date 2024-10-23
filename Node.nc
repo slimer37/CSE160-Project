@@ -92,6 +92,11 @@ implementation
         dbg(NEIGHBOR_CHANNEL, "Neighbor discovered: %u\n", neighborAddr);
     }
 
+    event void NeighborDiscovery.neighborLost(uint16_t neighborAddr) 
+    {
+        dbg(NEIGHBOR_CHANNEL, "Neighbor lost: %u\n", neighborAddr);
+    }
+
     event void CommandHandler.ping(uint16_t destination, uint8_t *payload) 
     {
         // error_t result;

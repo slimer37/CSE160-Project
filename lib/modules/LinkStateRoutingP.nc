@@ -192,6 +192,10 @@ implementation {
         //floodLinkState();
     }
 
+    event void NeighborDiscovery.neighborLost(uint16_t neighborAddr) {
+        floodRequested = TRUE;
+    }
+
     event void refloodTimer.fired() {
         if (!floodRequested) return;
 
