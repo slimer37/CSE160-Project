@@ -206,8 +206,8 @@ implementation {
 
         // if (TOS_NODE_ID == 2) {
         //     dbg(GENERAL_CHANNEL, "GOT LSP FROM %u\n:", src);
-        //     for (i = 0; i < 5; i++) {
-        //         dbg(GENERAL_CHANNEL, "%u - c %u\n", i, payload[i]);
+        //     for (i = 0; i < MAX_NODE_ID; i++) {
+        //         if (payload[i] != 0) dbg(GENERAL_CHANNEL, "%u - c %u\n", i, payload[i]);
         //     }
         // }
 
