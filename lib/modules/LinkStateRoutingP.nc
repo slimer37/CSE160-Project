@@ -4,12 +4,11 @@ module LinkStateRoutingP {
     uses interface Flooding;
     uses interface NeighborDiscovery;
 
-    uses interface List<uint16_t> as Confirmed;
-    uses interface List<uint16_t> as Tentative;
+    uses interface List<ProbableHop> as Confirmed;
+    uses interface List<ProbableHop> as Tentative;
 }
 
 #define MAX_NODE_ID NEIGHBOR_TABLE_LENGTH
-#define INFINITY 101
 
 implementation {
     uint8_t linkQualityTable[MAX_NODE_ID][MAX_NODE_ID];

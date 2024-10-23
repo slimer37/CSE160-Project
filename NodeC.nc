@@ -35,4 +35,8 @@ implementation
 
     Node.Flooding -> FloodingC;
     Node.NeighborDiscovery -> NeighborDiscoveryC;
+
+    components LinkStateRoutingC;
+
+    Node.LinkStateRouting -> LinkStateRoutingC;
 }

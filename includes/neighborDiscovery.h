@@ -15,3 +15,9 @@ typedef struct {
     bool recentlyReplied;
 
 } NeighborStats;
+
+typedef struct {
+    uint16_t dest;
+    uint8_t cost;
+    uint16_t nextHop;
+} ProbableHop;
