@@ -42,6 +42,11 @@ implementation{
 	}
 
 	// Added by me
+	command void List.set(uint16_t index, t newValue){
+		container[index] = newValue;
+	}
+
+	// Added by me
 	command t List.pop(uint16_t index){
 		t returnVal;
 		uint16_t i;

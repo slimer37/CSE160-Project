@@ -16,9 +16,9 @@ implementation {
     uint16_t nextHopTable[MAX_NODE_ID];
 
     void floodLinkState() {
-        uint8_t linkState = NeighborDiscovery.retrieveLinkState();
+        uint8_t linkState = call NeighborDiscovery.retrieveLinkState();
 
-        Flooding.floodSend(AM_BROADCAST_ADDR, linkState, MAX_NODE_ID);
+        call Flooding.floodSend(AM_BROADCAST_ADDR, linkState, MAX_NODE_ID);
     }
 
     // l(s, n) as in textbook
@@ -33,11 +33,12 @@ implementation {
         return a < b ? a : b;
     }
 
-    bool isTentative(uint16_t node) {
+    bool isTentative(uint16_t node, uint16_t *outIndex) {
         uint16_t i;
 
-        for (i = 0; i < Tentative.size(); i++) {
-            if (node == Tentative.get(i)) {
+        for (i = 0; i < call Tentative.size(); i++) {
+            if (node == (call Tentative.get(i)).dest) {
+                if (outIndex) *outIndex = i;
                 return TRUE;
             }
         }
@@ -48,8 +49,8 @@ implementation {
     bool isConfirmed(uint16_t node) {
         uint16_t i;
 
-        for (i = 0; i < Confirmed.size(); i++) {
-            if (node == Confirmed.get(i)) {
+        for (i = 0; i < call Confirmed.size(); i++) {
+            if (node == (call Confirmed.get(i)).dest) {
                 return TRUE;
             }
         }
@@ -57,19 +58,32 @@ implementation {
         return FALSE;
     }
 
+    void printRoutingTable() {
+        uint16_t i;
+        ProbableHop hop;
+
+        dbg(GENERAL_CHANNEL, "Routing table for %u:\n", TOS_NODE_ID);
+
+        for (i = 0; i < call Confirmed.size(); i++) {
+            hop = call Confirmed.get(i);
+            dbg(GENERAL_CHANNEL, "%u %u %u\n", hop.dest, hop.cost, hop.nextHop);
+        }
+    }
+
     // dijkstra
     void doForwardSearch() {
         ProbableHop hop;
         uint16_t next = TOS_NODE_ID;
         uint16_t id;
-        uint8_t cost;
         uint8_t i;
+        uint8_t cost;
+        uint16_t tentativeListLocation;
 
-        while (Confirmed.size() > 0) {
-            Confirmed.popback();
+        while (call Confirmed.size() > 0) {
+            call Confirmed.popback();
         }
-        while (Tentative.size() > 0) {
-            Tentative.popback();
+        while (call Tentative.size() > 0) {
+            call Tentative.popback();
         }
 
         // 1. initialization
@@ -78,24 +92,59 @@ implementation {
         hop.cost = 0;
         hop.nextHop = next;
 
-        Confirmed.pushback(hop);
+        call Confirmed.pushback(hop);
 
         // 2.
 
         // 3.
 
-        for (id = 0; id < MAX_NODE_ID; id++) {
-            if (edgeLength(next, id) > 100) continue;
+        while (TRUE) {
+            for (id = 0; id < MAX_NODE_ID; id++) {
+                // Iterate through neighbors
+                if (edgeLength(next, id) > 100) continue;
 
-            cost = costs[TOS_NODE_ID][next] + costs[next][id];
+                cost = costs[TOS_NODE_ID][next] + costs[next][id];
 
-            hop.dest = id;
-            hop.nextHop = next;
+                hop.dest = id;
+                hop.cost = cost;
+                hop.nextHop = next;
 
-            if (!isConfirmed(id) && !isTentative(id)) {
-                Tentative.pushback(hop);
+                if (isTentative(id, &tentativeListLocation)) {
+                    if (cost < costs[TOS_NODE_ID][id]) {
+                        call Tentative.set(tentativeListLocation, hop);
+                        continue;
+                    }
+                }
+
+                if (!isConfirmed(id)) {
+                    call Tentative.pushback(hop);
+                }
             }
-        } 
+
+            if (call Tentative.isEmpty()) break;
+
+            // Now using cost and next to track minimum
+            cost = (call Tentative.get(0)).cost;
+            tentativeListLocation = 0; // its index
+
+            for (i = 1; i < call Tentative.size(); i++) {
+                hop = call Tentative.get(i);
+                if (hop.cost < cost) {
+                    tentativeListLocation = i;
+                    cost = hop.cost;
+                }
+            }
+
+            hop = call Tentative.get(tentativeListLocation);
+
+            next = hop.dest;
+
+            // Move the minimum cost hop to the confirmed list
+            call Confirmed.pushback(hop);
+            call Tentative.pop(tentativeListLocation);
+        }
+
+        printRoutingTable();
     }
     
     // redistribute link state whenever neighbor list changes
