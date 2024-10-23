@@ -144,15 +144,15 @@ def main():
     # s.addChannel(s.NEIGHBOR_CHANNEL);
     s.addChannel(s.GENERAL_CHANNEL);
 
-    s.runTime(1000);
-    s.neighborDMP(1);
-    s.runTime(10);
-    s.neighborDMP(2);
-    s.runTime(10);
-    s.neighborDMP(3);
-    s.runTime(10);
+    s.runTime(100);
+    s.routeDMP(1);
+    s.runTime(1);
     s.routeDMP(2);
-    s.runTime(10);
+    s.runTime(1);
+    s.routeDMP(3);
+    s.runTime(1);
+    s.routeDMP(4);
+    s.runTime(1);
     # s.ping(1, 9, "Hello, World");
     # s.runTime(10000);
     # s.ping(1, 3, "Hi!");

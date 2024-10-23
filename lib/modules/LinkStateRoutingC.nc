@@ -17,4 +17,7 @@ implementation {
     LinkStateRoutingP.Tentative-> Tentative;
     components new ListC(ProbableHop, 256) as Confirmed;
     LinkStateRoutingP.Confirmed -> Confirmed;
+
+    components new TimerMilliC() as ft;
+    LinkStateRoutingP.refloodTimer -> ft;
 }

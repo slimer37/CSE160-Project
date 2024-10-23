@@ -6,6 +6,8 @@ module LinkStateRoutingP {
 
     uses interface List<ProbableHop> as Confirmed;
     uses interface List<ProbableHop> as Tentative;
+
+    uses interface Timer<TMilli> as refloodTimer;
 }
 
 #define MAX_NODE_ID NEIGHBOR_TABLE_LENGTH
@@ -14,6 +16,10 @@ implementation {
     uint8_t linkQualityTable[MAX_NODE_ID][MAX_NODE_ID];
     uint16_t costs[MAX_NODE_ID][MAX_NODE_ID];
     uint16_t nextHopTable[MAX_NODE_ID];
+
+    command void LinkStateRouting.startTimer() {
+        call refloodTimer.startPeriodic(1000);
+    }
 
     // l(s, n) as in textbook
     uint8_t edgeLength(uint16_t s, uint16_t n) {
@@ -58,9 +64,10 @@ implementation {
 
         dbg(GENERAL_CHANNEL, "Routing table for %u:\n", TOS_NODE_ID);
 
-        for (i = 0; i < call Confirmed.size(); i++) {
-            hop = call Confirmed.get(i);
-            dbg(GENERAL_CHANNEL, "%u %u %u\n", hop.dest, hop.cost, hop.nextHop);
+        for (i = 0; i < MAX_NODE_ID; i++) {
+            if (nextHopTable[i] == 0) continue;
+            
+            dbg(GENERAL_CHANNEL, "%u %u \n", i, nextHopTable[i]);
         }
     }
 
@@ -69,7 +76,7 @@ implementation {
         ProbableHop hop;
         uint16_t next = TOS_NODE_ID;
         uint16_t id;
-        uint8_t i;
+        uint16_t i;
         uint8_t cost;
         uint16_t tentativeListLocation;
 
@@ -142,18 +149,29 @@ implementation {
 
             next = hop.dest;
         }
+
+        // Update routing table
+
+        for (id = 0; id < MAX_NODE_ID; id++) {
+            nextHopTable[id] = 0;
+        }
+
+        for (i = 0; i < call Confirmed.size(); i++) {
+            hop = call Confirmed.get(i);
+            nextHopTable[hop.dest] = hop.nextHop;
+        }
     }
 
     void floodLinkState() {
         uint16_t i;
         uint8_t *linkState = call NeighborDiscovery.retrieveLinkState();
 
-        if (TOS_NODE_ID >= 0 && TOS_NODE_ID <= 3) {
-            dbg(GENERAL_CHANNEL, "SENDING LSP FROM %u\n:", TOS_NODE_ID);
-            for (i = 0; i < 5; i++) {
-                dbg(GENERAL_CHANNEL, "%u - c %u\n", i, linkState[i]);
-            }
-        }
+        // if (TOS_NODE_ID >= 0 && TOS_NODE_ID <= 4) {
+        //     dbg(GENERAL_CHANNEL, "SENDING LSP FROM %u\n:", TOS_NODE_ID);
+        //     for (i = 0; i < 5; i++) {
+        //         dbg(GENERAL_CHANNEL, "%u - c %u\n", i, linkState[i]);
+        //     }
+        // }
 
         memcpy(linkQualityTable[TOS_NODE_ID], linkState, NEIGHBOR_TABLE_LENGTH);
 
@@ -162,8 +180,11 @@ implementation {
         doForwardSearch();
     }
     
-    // redistribute link state whenever neighbor list changes
     event void NeighborDiscovery.neighborDiscovered(uint16_t neighborAddr) {
+        //floodLinkState();
+    }
+
+    event void refloodTimer.fired() {
         floodLinkState();
     }
 
@@ -173,12 +194,12 @@ implementation {
         // copy the link qualities into appropriate row
         memcpy(linkQualityTable[src], payload, MAX_NODE_ID);
 
-        if (TOS_NODE_ID == 2) {
-            dbg(GENERAL_CHANNEL, "GOT LSP FROM %u\n:", src);
-            for (i = 0; i < 5; i++) {
-                dbg(GENERAL_CHANNEL, "%u - c %u\n", i, payload[i]);
-            }
-        }
+        // if (TOS_NODE_ID == 2) {
+        //     dbg(GENERAL_CHANNEL, "GOT LSP FROM %u\n:", src);
+        //     for (i = 0; i < 5; i++) {
+        //         dbg(GENERAL_CHANNEL, "%u - c %u\n", i, payload[i]);
+        //     }
+        // }
 
         doForwardSearch();
     }

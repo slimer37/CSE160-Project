@@ -50,6 +50,7 @@ implementation
         {
             dbg(GENERAL_CHANNEL, "Radio On\n");
             call NeighborDiscovery.startDiscovery();
+            call LinkStateRouting.startTimer();
         } 
         else 
         {
@@ -115,7 +116,7 @@ implementation
     event void CommandHandler.printRouteTable() {
         call LinkStateRouting.printRoutingTable();
     }
-    
+
     event void CommandHandler.printLinkState() {}
     event void CommandHandler.printDistanceVector() {}
     event void CommandHandler.setTestServer() {}
