@@ -12,7 +12,7 @@ module NeighborDiscoveryP {
 #define REDISCOVERY_PERIOD 400
 
 implementation {
-    float neighborQualityTable[NEIGHBOR_TABLE_LENGTH];
+    uint8_t neighborQualityTable[NEIGHBOR_TABLE_LENGTH];
     NeighborStats neighborStats[NEIGHBOR_TABLE_LENGTH];
     uint16_t seq = 0;
 
@@ -29,10 +29,6 @@ implementation {
 
         // Initialize neighbor statistics
         for (id = 0; id < NEIGHBOR_TABLE_LENGTH; id++) {
-            for (i = 0; i < ND_MOVING_AVERAGE_N; i++) {
-                neighborStats[id].responseSamples[i] = FALSE;
-            }
-
             neighborQualityTable[id] = 0;
             neighborStats[id].linkLifetime = 0;
             neighborStats[id].recentlyReplied = FALSE;
@@ -47,7 +43,7 @@ implementation {
 
         for (id = 0; id < NEIGHBOR_TABLE_LENGTH; id++) {
             // EWMA
-            neighborQualityTable[id] = EWMA_ALPHA * neighborStats[id].recentlyReplied + (1 - EWMA_ALPHA) * neighborQualityTable[id];
+            neighborQualityTable[id] = EWMA_ALPHA * neighborStats[id].recentlyReplied * 100 + (1 - EWMA_ALPHA) * neighborQualityTable[id];
 
             // Reset flag
             neighborStats[id].recentlyReplied = FALSE;
