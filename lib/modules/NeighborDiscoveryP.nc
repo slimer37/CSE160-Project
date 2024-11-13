@@ -12,7 +12,7 @@ module NeighborDiscoveryP {
 #define REDISCOVERY_PERIOD 400
 
 implementation {
-    uint8_t neighborQualityTable[NEIGHBOR_TABLE_LENGTH];
+    float neighborQualityTable[NEIGHBOR_TABLE_LENGTH];
     NeighborStats neighborStats[NEIGHBOR_TABLE_LENGTH];
     uint16_t seq = 0;
 
@@ -27,6 +27,7 @@ implementation {
         call discoveryTimer.startPeriodic(REDISCOVERY_PERIOD);
         dbg(NEIGHBOR_CHANNEL, "Neighbor discovery started\n");
 
+        // Initialize neighbor statistics
         for (id = 0; id < NEIGHBOR_TABLE_LENGTH; id++) {
             for (i = 0; i < ND_MOVING_AVERAGE_N; i++) {
                 neighborStats[id].responseSamples[i] = FALSE;
@@ -37,49 +38,39 @@ implementation {
             neighborStats[id].recentlyReplied = FALSE;
         }
     }
+
+    #define EWMA_ALPHA 0.3
     
-    void recalculateLinkStatistics() {
+    // Calculates EWMA and resets/decrements statistics for next round of discovery
+    void advanceLinkStats() {
         uint16_t id;
-        uint8_t i;
-        uint8_t sum;
 
         for (id = 0; id < NEIGHBOR_TABLE_LENGTH; id++) {
-            for (i = ND_MOVING_AVERAGE_N - 1; i > 0; i--) {
-                neighborStats[id].responseSamples[i] = neighborStats[id].responseSamples[i - 1];
-            }
+            // EWMA
+            neighborQualityTable[id] = EWMA_ALPHA * neighborStats[id].recentlyReplied + (1 - EWMA_ALPHA) * neighborQualityTable[id];
 
-            neighborStats[id].responseSamples[0] = neighborStats[id].recentlyReplied;
-            
+            // Reset flag
             neighborStats[id].recentlyReplied = FALSE;
 
-            sum = 0;
+            // Decrement link lifetimes
+        
+            if (neighborStats[id].linkLifetime > 0) {
+                
+                neighborStats[id].linkLifetime--;
 
-            for (i = 0; i < ND_MOVING_AVERAGE_N; i++) {
-                if (neighborStats[id].responseSamples[i]) {
-                    sum++;
+                // Signal lost neighbor if the lifetime became zero
+
+                if (neighborStats[id].linkLifetime == 0) {
+                    signal NeighborDiscovery.neighborLost(id);
                 }
             }
-
-            if (sum == 0) {
-                signal NeighborDiscovery.neighborLost(id);
-            }
-
-            neighborQualityTable[id] = sum * 100 / ND_MOVING_AVERAGE_N;
         }
     }
 
     void sendDiscoveryPackets() {
         pack msgPayload;
 
-        uint16_t id;
-
-        recalculateLinkStatistics();
-
-        for (id = 0; id < NEIGHBOR_TABLE_LENGTH; id++) {
-            if (neighborStats[id].linkLifetime == 0) continue;
-
-            neighborStats[id].linkLifetime--;
-        }
+        advanceLinkStats();
 
         // Prepare the discovery packet
         msgPayload.src = TOS_NODE_ID;
