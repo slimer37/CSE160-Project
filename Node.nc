@@ -77,10 +77,6 @@ implementation
             pack* myMsg = (pack*) payload;
             dbg(GENERAL_CHANNEL, "Package Payload: %s\n", myMsg->payload);
 
-            if (myMsg->protocol == PROTOCOL_TCP) {
-                call Transport.receive(myMsg);
-            }
-
             return msg;
         }
         dbg(GENERAL_CHANNEL, "Unknown Packet Type %d\n", len);
@@ -94,7 +90,19 @@ implementation
 
     event void RoutedSend.received(uint16_t src, pack *package, uint8_t len) 
     {
-        dbg(GENERAL_CHANNEL, "Packet received via LSR from %u with payload: %s\n", src, package->payload);
+        if (package->protocol == PROTOCOL_TCP) {
+            tcp_pack *packet = (tcp_pack*)package->payload;
+            
+            dbg(TRANSPORT_CHANNEL, "TCP packet received via LSR from %u with flags:\n", src);
+            
+            if (packet->flags & 0x80) dbg(TRANSPORT_CHANNEL, "SYN\n", src);
+            if (packet->flags & 0x40) dbg(TRANSPORT_CHANNEL, "ACK\n", src);
+
+            call Transport.receive(package);
+        }
+        else {
+            dbg(GENERAL_CHANNEL, "Packet received via LSR from %u with payload: %s\n", src, package->payload);
+        }
     }
 
     event void NeighborDiscovery.neighborDiscovered(uint16_t neighborAddr) 
@@ -118,7 +126,7 @@ implementation
         //     dbg(GENERAL_CHANNEL, "Failed to send ping, error %d\n", result);
         // }
 
-        call RoutedSend.send(destination, payload, PACKET_MAX_PAYLOAD_SIZE);
+        call RoutedSend.send(destination, payload, PACKET_MAX_PAYLOAD_SIZE, PROTOCOL_PING);
     }
 
     event void CommandHandler.flood(uint16_t destination, uint8_t *payload)

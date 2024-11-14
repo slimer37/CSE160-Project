@@ -63,7 +63,7 @@ implementation {
             packet.source.port = socket->src;
             packet.dest.port = socket->dest.port;
 
-            call RoutedSend.send(socket->dest.addr, (uint8_t*)&packet, sizeof(packet));
+            call RoutedSend.send(socket->dest.addr, (uint8_t*)&packet, sizeof(packet), PROTOCOL_TCP);
         }
     }
 
@@ -80,26 +80,35 @@ implementation {
 
         // if SYN
         if (packet->flags & 0x80) {
+
+            ackPack.source = packet->dest;
+            ackPack.dest = packet->source;
+
             // + ACK
             if (packet->flags & 0x40) {
                 if (socket->state == SYN_SENT) {
                     // ACK back
-                    ackPack.source = packet->dest;
-                    ackPack.dest = packet->source;
-                    ackPack.flags = packet->flags = 0x40;
+                    ackPack.flags = 0x40;
 
-                    call RoutedSend.send(packet->source.addr, (uint8_t*)packet, sizeof(packet));
+                    call RoutedSend.send(ackPack.dest.addr, (uint8_t*)&ackPack, sizeof(ackPack), PROTOCOL_TCP);
                 }
             }
-            else if (socket->state == LISTEN) {
-                socket->state = SYN_RCVD;
+            else if (socket->state == CLOSED) {
+                socket->state = LISTEN;
                 socket->dest = packet->source;
+
+                // SYN + ACK back
+                ackPack.flags = 0x40 | 0x80;
+
+                call RoutedSend.send(ackPack.dest.addr, (uint8_t*)&ackPack, sizeof(ackPack), PROTOCOL_TCP);
+
+                dbg(TRANSPORT_CHANNEL, "Got SYN, went to LISTEN; SYN + ACK ing to %u\n", ackPack.dest.addr);
             }
         }
         // ACK
         else if (packet->flags & 0x40) {
             socket->state = ESTABLISHED;
-            dbg(GENERAL_CHANNEL, "established");
+            dbg(TRANSPORT_CHANNEL, "Established\n");
         }
     }
 
@@ -123,11 +132,14 @@ implementation {
         packet.flags = 0x80;
 
         packet.source.port = socket->src;
-        packet.dest.port = addr->port;
+        packet.source.addr = TOS_NODE_ID;
+        packet.dest = *addr;
 
         socket->state = SYN_SENT;
 
-        call RoutedSend.send(addr->addr, (uint8_t*)&packet, sizeof(packet));
+        dbg(TRANSPORT_CHANNEL, "Active open, SYN to %u\n", addr->addr);
+
+        call RoutedSend.send(addr->addr, (uint8_t*)&packet, sizeof(packet), PROTOCOL_TCP);
 
         return SUCCESS;
     }
