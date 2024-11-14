@@ -13,11 +13,12 @@ module NeighborDiscoveryP {
 
 implementation {
     uint8_t neighborQualityTable[NEIGHBOR_TABLE_LENGTH];
+    uint8_t distanceVectorTable[NEIGHBOR_TABLE_LENGTH];
     NeighborStats neighborStats[NEIGHBOR_TABLE_LENGTH];
     uint16_t seq = 0;
 
-    command uint8_t* NeighborDiscovery.retrieveLinkState() {
-        return neighborQualityTable;
+    command uint8_t* NeighborDiscovery.retrieveDistanceVectors() {
+        return distanceVectorTable;
     }
 
     command void NeighborDiscovery.startDiscovery() {
@@ -44,6 +45,9 @@ implementation {
         for (id = 0; id < NEIGHBOR_TABLE_LENGTH; id++) {
             // EWMA
             neighborQualityTable[id] = EWMA_ALPHA * neighborStats[id].recentlyReplied * 100 + (1 - EWMA_ALPHA) * neighborQualityTable[id];
+            
+            // Calculate cost of node as inverse of link quality
+            distanceVectorTable[id] = 101 - neighborQualityTable[id];
 
             // Reset flag
             neighborStats[id].recentlyReplied = FALSE;

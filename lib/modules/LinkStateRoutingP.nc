@@ -13,7 +13,7 @@ module LinkStateRoutingP {
 #define MAX_NODE_ID NEIGHBOR_TABLE_LENGTH
 
 implementation {
-    uint8_t linkQualityTable[MAX_NODE_ID][MAX_NODE_ID];
+    uint8_t distanceVectorTable[MAX_NODE_ID][MAX_NODE_ID];
     uint16_t costs[MAX_NODE_ID][MAX_NODE_ID];
     uint16_t nextHopTable[MAX_NODE_ID];
 
@@ -32,7 +32,7 @@ implementation {
         // cost based on link quality
         // 100% gives 1 cost
         // 0% gives 101 cost (over 100 considered infinity)
-        return 101 - linkQualityTable[s][n];
+        return distanceVectorTable[s][n];
     }
 
     uint8_t min(uint8_t a, uint8_t b) {
@@ -171,7 +171,7 @@ implementation {
 
     void floodLinkState() {
         uint16_t i;
-        uint8_t *linkState = call NeighborDiscovery.retrieveLinkState();
+        uint8_t *dv = call NeighborDiscovery.retrieveDistanceVectors();
 
         // if (TOS_NODE_ID >= 0 && TOS_NODE_ID <= 4) {
         //     dbg(GENERAL_CHANNEL, "SENDING LSP FROM %u\n:", TOS_NODE_ID);
@@ -180,9 +180,9 @@ implementation {
         //     }
         // }
 
-        memcpy(linkQualityTable[TOS_NODE_ID], linkState, NEIGHBOR_TABLE_LENGTH);
+        memcpy(distanceVectorTable[TOS_NODE_ID], dv, NEIGHBOR_TABLE_LENGTH);
 
-        call Flooding.floodSend(AM_BROADCAST_ADDR, linkState, NEIGHBOR_TABLE_LENGTH);
+        call Flooding.floodSend(AM_BROADCAST_ADDR, dv, NEIGHBOR_TABLE_LENGTH);
 
         doForwardSearch();
     }
@@ -206,8 +206,8 @@ implementation {
     event void Flooding.receivedFlooding(uint16_t src, uint8_t *payload, uint8_t len) {
         uint16_t i;
 
-        // copy the link qualities into appropriate row
-        memcpy(linkQualityTable[src], payload, len);
+        // copy the distances into appropriate row
+        memcpy(distanceVectorTable[src], payload, len);
 
         // if (TOS_NODE_ID == 2) {
         //     dbg(GENERAL_CHANNEL, "GOT LSP FROM %u\n:", src);
