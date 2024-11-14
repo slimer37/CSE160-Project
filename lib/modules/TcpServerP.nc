@@ -23,7 +23,7 @@ implementation {
         socket_address.addr = TOS_NODE_ID;
 
         if (call Transport.bind(serverSocket, &socket_address) == SUCCESS) {
-            dbg(TRANSPORT_CHANNEL, "Bound socket to port %u.\n", port);
+            dbg(TRANSPORT_CHANNEL, "Bound server to port %u.\n", port);
         } else {
             dbg(TRANSPORT_CHANNEL, "Failed to bind to port %u.\n", port);
         }

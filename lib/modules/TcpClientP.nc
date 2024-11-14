@@ -21,9 +21,21 @@ implementation {
         serverAddress.port = destPort;
         serverAddress.addr = dest;
 
-        call Transport.bind(clientSocket, &socketAddress);
+        if (call Transport.bind(clientSocket, &socketAddress) == SUCCESS) {
+            dbg(TRANSPORT_CHANNEL, "Bound client to port %u.\n", srcPort);
+        }
+        else {
+            dbg(TRANSPORT_CHANNEL, "Failed to bind client.\n");
+            return;
+        }
 
-        call Transport.connect(clientSocket, &serverAddress);
+        if (call Transport.connect(clientSocket, &serverAddress) == SUCCESS) {
+            dbg(TRANSPORT_CHANNEL, "Starting connection to %u:%u.\n", dest, destPort);
+        }
+        else {
+            dbg(TRANSPORT_CHANNEL, "Couldn't start connecting.\n");
+            return;
+        }
     }
 
     event void writeTimer.fired() {
