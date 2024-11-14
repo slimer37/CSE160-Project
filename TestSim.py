@@ -153,11 +153,18 @@ def main():
     s.loadTopo("example.topo");
     s.loadNoise("no_noise.txt");
     s.bootAll();
-    # s.addChannel(s.COMMAND_CHANNEL);
+    s.addChannel(s.COMMAND_CHANNEL);
     # s.addChannel(s.FLOODING_CHANNEL);
     # s.addChannel(s.NEIGHBOR_CHANNEL);
     s.addChannel(s.GENERAL_CHANNEL);
     s.addChannel(s.ROUTING_CHANNEL);
+    s.addChannel(s.TRANSPORT_CHANNEL);
+
+    s.runTime(100);
+    # s.cmdTestClient(1, 1, 1, 1, 555);
+    s.cmdTestServer(1, 5);
+    s.runTime(100);
+    return
 
     s.runTime(1000);
     s.linkStateDMP(1);
