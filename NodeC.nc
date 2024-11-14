@@ -41,4 +41,8 @@ implementation
 
     Node.LinkStateRouting -> LinkStateRoutingC;
     Node.RoutedSend -> RoutedSendC;
+
+    components TransportC;
+
+    Node.Transport -> TransportC;
 }

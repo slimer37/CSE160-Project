@@ -29,6 +29,8 @@ module Node
     uses interface NeighborDiscovery;
 
     uses interface CommandHandler;
+
+    uses interface Transport;
 }
 
 implementation 
