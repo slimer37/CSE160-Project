@@ -31,6 +31,7 @@ module Node
     uses interface CommandHandler;
 
     uses interface TcpServer;
+    uses interface TcpClient;
 
     uses interface Transport;
 }
@@ -91,9 +92,9 @@ implementation
         dbg(FLOODING_CHANNEL, "Flooding packet received from %u with payload: %s\n", src, payload);
     }
 
-    event void RoutedSend.received(uint16_t src, uint8_t *payload, uint8_t len) 
+    event void RoutedSend.received(uint16_t src, pack *package, uint8_t len) 
     {
-        dbg(GENERAL_CHANNEL, "Packet received via LSR from %u with payload: %s\n", src, payload);
+        dbg(GENERAL_CHANNEL, "Packet received via LSR from %u with payload: %s\n", src, package->payload);
     }
 
     event void NeighborDiscovery.neighborDiscovered(uint16_t neighborAddr) 
@@ -147,6 +148,7 @@ implementation
     }
 
     event void CommandHandler.setTestClient(uint8_t srcPort, uint8_t dest, uint8_t destPort, uint16_t transfer) {
+        call TcpClient.startClient(srcPort, dest, destPort);
         dbg(GENERAL_CHANNEL, "Transfer: %u\n", transfer);
     }
 

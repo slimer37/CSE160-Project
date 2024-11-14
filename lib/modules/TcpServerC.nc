@@ -8,4 +8,7 @@ implementation {
 
     components TransportC;
     TcpServerP.Transport -> TransportC;
+
+    components new TimerMilliC() as acceptConnectionTimer;
+    TcpServerP.acceptConnectionTimer -> acceptConnectionTimer;
 }

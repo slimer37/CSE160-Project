@@ -47,7 +47,7 @@ implementation {
         if (receivedPacket->protocol != PROTOCOL_PING) return msg;
 
         if (receivedPacket->dest == TOS_NODE_ID) {
-            signal RoutedSend.received(receivedPacket->src, receivedPacket->payload, len - PACKET_HEADER_LENGTH);
+            signal RoutedSend.received(receivedPacket->src, receivedPacket, len);
             return msg;
         }
 

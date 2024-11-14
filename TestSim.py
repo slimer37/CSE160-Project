@@ -164,6 +164,8 @@ def main():
     # s.cmdTestClient(1, 1, 1, 1, 555);
     s.cmdTestServer(1, 5);
     s.runTime(100);
+    s.cmdTestClient(3, 1, 1, 5, 5);
+    s.runTime(1000);
     return
 
     s.runTime(1000);

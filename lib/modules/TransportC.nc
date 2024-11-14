@@ -5,4 +5,7 @@ configuration TransportC {
 implementation {
     components TransportP;
     Transport = TransportP;
+
+    components RoutedSendC;
+    TransportP.RoutedSend -> RoutedSendC;
 }

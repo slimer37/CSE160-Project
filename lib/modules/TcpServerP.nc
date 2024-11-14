@@ -2,16 +2,19 @@ module TcpServerP {
     provides interface TcpServer;
 
     uses interface Transport;
+
+    uses interface Timer<TMilli> as acceptConnectionTimer;
 }
 
 implementation {
+    socket_t serverSocket;
+
     command void TcpServer.startServer(socket_port_t port) {
-        socket_t socket;
         socket_addr_t socket_address;
 
-        socket = call Transport.socket();
+        serverSocket = call Transport.socket();
 
-        if (!socket) {
+        if (!serverSocket) {
             dbg(TRANSPORT_CHANNEL, "No socket available.\n");
             return;
         }
@@ -19,10 +22,16 @@ implementation {
         socket_address.port = port;
         socket_address.addr = TOS_NODE_ID;
 
-        if (call Transport.bind(socket, &socket_address) == SUCCESS) {
+        if (call Transport.bind(serverSocket, &socket_address) == SUCCESS) {
             dbg(TRANSPORT_CHANNEL, "Bound socket to port %u.\n", port);
         } else {
             dbg(TRANSPORT_CHANNEL, "Failed to bind to port %u.\n", port);
         }
+
+        call acceptConnectionTimer.startPeriodic(ATTEMPT_CONNECTION_TIME);
+    }
+
+    event void acceptConnectionTimer.fired() {
+        socket_t socket = call Transport.accept(serverSocket);
     }
 }
