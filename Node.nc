@@ -135,8 +135,12 @@ implementation
         call NeighborDiscovery.printDistanceVector();
     }
 
-    event void CommandHandler.setTestServer() {}
-    event void CommandHandler.setTestClient() {}
+    event void CommandHandler.setTestServer(uint8_t port) {}
+
+    event void CommandHandler.setTestClient(uint8_t srcPort, uint8_t dest, uint8_t destPort, uint16_t transfer) {
+        dbg(GENERAL_CHANNEL, "Transfer: %u\n", transfer);
+    }
+
     event void CommandHandler.setAppServer() {}
     event void CommandHandler.setAppClient() {}
 

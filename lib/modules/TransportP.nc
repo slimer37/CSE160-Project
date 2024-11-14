@@ -3,6 +3,8 @@ module TransportP {
 }
 
 implementation {
+    socket_store_t socket_store;
+    
     command socket_t Transport.socket() {
 
     }
