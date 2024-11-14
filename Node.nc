@@ -90,19 +90,7 @@ implementation
 
     event void RoutedSend.received(uint16_t src, pack *package, uint8_t len) 
     {
-        if (package->protocol == PROTOCOL_TCP) {
-            tcp_pack *packet = (tcp_pack*)package->payload;
-            
-            dbg(TRANSPORT_CHANNEL, "TCP packet received via LSR from %u with flags:\n", src);
-            
-            if (packet->flags & 0x80) dbg(TRANSPORT_CHANNEL, "SYN\n", src);
-            if (packet->flags & 0x40) dbg(TRANSPORT_CHANNEL, "ACK\n", src);
-
-            call Transport.receive(package);
-        }
-        else {
-            dbg(GENERAL_CHANNEL, "Packet received via LSR from %u with payload: %s\n", src, package->payload);
-        }
+        dbg(GENERAL_CHANNEL, "Packet received via LSR from %u with payload: %s\n", src, package->payload);
     }
 
     event void NeighborDiscovery.neighborDiscovered(uint16_t neighborAddr) 

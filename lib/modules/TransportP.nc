@@ -170,6 +170,15 @@ implementation {
     }
 
     event void RoutedSend.received(uint16_t src, pack *package, uint8_t len) {
+        if (package->protocol == PROTOCOL_TCP) {
+            tcp_pack *packet = (tcp_pack*)package->payload;
+            
+            dbg(TRANSPORT_CHANNEL, "TCP packet received via LSR from %u with flags:\n", src);
+            
+            if (packet->flags & 0x80) dbg(TRANSPORT_CHANNEL, "SYN\n", src);
+            if (packet->flags & 0x40) dbg(TRANSPORT_CHANNEL, "ACK\n", src);
+        }
+
         call Transport.receive(package);
     }
 

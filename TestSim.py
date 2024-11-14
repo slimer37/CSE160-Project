@@ -135,8 +135,8 @@ class TestSim:
     def routeDMP(self, destination):
         self.sendCMD(self.CMD_ROUTE_DUMP, destination, "routing command");
     
-    def cmdTestServer(self, address, port):
-        self.sendCMD(self.CMD_TEST_SERVER, address, chr(port));
+    def cmdTestServer(self, node, port):
+        self.sendCMD(self.CMD_TEST_SERVER, node, chr(port));
     
     def cmdTestClient(self, node, dest, srcPort, destPort, transfer):
         high = chr(transfer >> 8)
