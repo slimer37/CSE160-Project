@@ -125,8 +125,14 @@ implementation
         call LinkStateRouting.printRoutingTable();
     }
 
-    event void CommandHandler.printLinkState() {}
-    event void CommandHandler.printDistanceVector() {}
+    event void CommandHandler.printLinkState() {
+        call NeighborDiscovery.printLinkState();
+    }
+
+    event void CommandHandler.printDistanceVector() {
+        call NeighborDiscovery.printDistanceVector();
+    }
+
     event void CommandHandler.setTestServer() {}
     event void CommandHandler.setTestClient() {}
     event void CommandHandler.setAppServer() {}

@@ -12,6 +12,7 @@ class TestSim:
     # COMMAND TYPES
     CMD_PING = 0
     CMD_NEIGHBOR_DUMP = 1
+    CMD_LINKSTATE_DUMP = 2
     CMD_ROUTE_DUMP=3
     CMD_FLOOD_SEND=10
 
@@ -125,6 +126,9 @@ class TestSim:
 
     def neighborDMP(self, destination):
         self.sendCMD(self.CMD_NEIGHBOR_DUMP, destination, "neighbor command");
+    
+    def linkStateDMP(self, destination):
+        self.sendCMD(self.CMD_LINKSTATE_DUMP, destination, "link state command");
 
     def routeDMP(self, destination):
         self.sendCMD(self.CMD_ROUTE_DUMP, destination, "routing command");
@@ -146,7 +150,7 @@ def main():
     s.addChannel(s.ROUTING_CHANNEL);
 
     s.runTime(1000);
-    s.routeDMP(1);
+    s.linkStateDMP(1);
     s.runTime(10);
     s.ping(1, 9, "Hello, World");
     s.runTime(1000);

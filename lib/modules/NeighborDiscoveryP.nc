@@ -119,11 +119,39 @@ implementation {
         for (id = 0; id < NEIGHBOR_TABLE_LENGTH; id++) {
             // Positive lifetime means active link
             if (neighborStats[id].linkLifetime > 0) {
-                dbg(GENERAL_CHANNEL, "- Node %u : %u%% | %u\n", id, neighborQualityTable[id], neighborStats[id].linkLifetime);
+                dbg(GENERAL_CHANNEL, "- Node %u\n", id);
             }
         }
 
         dbg(GENERAL_CHANNEL, "-- End of neighbors --\n");
+    }
+
+    command void NeighborDiscovery.printLinkState() {
+        uint16_t id;
+
+        dbg(GENERAL_CHANNEL, "Link State of node %u:\n", TOS_NODE_ID);
+
+        // Find active links
+        for (id = 0; id < NEIGHBOR_TABLE_LENGTH; id++) {
+            // Positive lifetime means active link
+            if (neighborStats[id].linkLifetime > 0) {
+                dbg(GENERAL_CHANNEL, "Node %u : %u%% | %u\n", id, neighborQualityTable[id], neighborStats[id].linkLifetime);
+            }
+        }
+
+        dbg(GENERAL_CHANNEL, "-- End of link state --\n");
+    }
+
+    command void NeighborDiscovery.printDistanceVector() {
+        uint16_t id;
+
+        dbg(GENERAL_CHANNEL, "Distance vector of node %u:\n", TOS_NODE_ID);
+
+        for (id = 0; id < NEIGHBOR_TABLE_LENGTH; id++) {
+            dbg(GENERAL_CHANNEL, "%u => %u\n", id, distanceVectorTable[id]);
+        }
+
+        dbg(GENERAL_CHANNEL, "-- End of DV --\n");
     }
     
     event message_t* Receive.receive(message_t* msg, void* payload, uint8_t len) {
