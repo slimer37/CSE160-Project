@@ -122,6 +122,9 @@ implementation {
 
                 if (next == TOS_NODE_ID) {
                     hop.nextHop = id;
+
+                    // Force neighbors to be prioritized
+                    hop.cost = cost = 1;
                 } else {
                     hop.nextHop = next;
                     // While the next hop for this node is not a neighbor of the source,

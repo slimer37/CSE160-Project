@@ -44,6 +44,7 @@ implementation {
             return FAIL;
         }
         
+        socket->state = LISTEN;
         socket->src = addr->port;
 
         return SUCCESS;
@@ -90,11 +91,15 @@ implementation {
                     // ACK back
                     ackPack.flags = 0x40;
 
+                    socket->state = ESTABLISHED;
+
                     call RoutedSend.send(ackPack.dest.addr, (uint8_t*)&ackPack, sizeof(ackPack), PROTOCOL_TCP);
+
+                    dbg(TRANSPORT_CHANNEL, "CLIENT ESTABLISHED! Got SYN + ACK, ACK to %u\n", ackPack.dest.addr);
                 }
             }
-            else if (socket->state == CLOSED) {
-                socket->state = LISTEN;
+            else if (socket->state == LISTEN) {
+                socket->state = SYN_RCVD;
                 socket->dest = packet->source;
 
                 // SYN + ACK back
@@ -107,8 +112,10 @@ implementation {
         }
         // ACK
         else if (packet->flags & 0x40) {
-            socket->state = ESTABLISHED;
-            dbg(TRANSPORT_CHANNEL, "Established\n");
+            if (socket->state == SYN_RCVD) {
+                socket->state = ESTABLISHED;
+                dbg(TRANSPORT_CHANNEL, "SERVER ESTABLISHED! Got final ACK. \n");
+            }
         }
     }
 
@@ -124,7 +131,7 @@ implementation {
         socket_store_t *socket = fdToSocket(fd);
         tcp_pack packet;
 
-        if (socket->state != CLOSED) {
+        if (socket->state != LISTEN) {
             return FAIL;
         }
 

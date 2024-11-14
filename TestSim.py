@@ -157,14 +157,21 @@ def main():
     # s.addChannel(s.FLOODING_CHANNEL);
     # s.addChannel(s.NEIGHBOR_CHANNEL);
     s.addChannel(s.GENERAL_CHANNEL);
-    # s.addChannel(s.ROUTING_CHANNEL);
+    s.addChannel(s.ROUTING_CHANNEL);
     s.addChannel(s.TRANSPORT_CHANNEL);
 
     s.runTime(100);
     # s.cmdTestClient(1, 1, 1, 1, 555);
     s.cmdTestServer(1, 5);
     s.runTime(100);
-    s.cmdTestClient(3, 1, 1, 5, 5);
+    # s.routeDMP(9);
+    # s.runTime(100);
+    s.cmdTestClient(3, 9, 1, 5, 5);
+    s.runTime(100);
+    # s.runTime(100);
+    # s.routeDMP(2);
+    # s.runTime(100);
+    # s.routeDMP(1);
     s.runTime(1000);
     return
 
