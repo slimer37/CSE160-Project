@@ -36,9 +36,18 @@ implementation {
             dbg(TRANSPORT_CHANNEL, "Couldn't start connecting.\n");
             return;
         }
+
+        dbg(TRANSPORT_CHANNEL, "Will close in 5...\n");
+
+        // Close in 5
+        call writeTimer.startOneShot(5000);
     }
 
     event void writeTimer.fired() {
+        // Just using this to close for the sake of mid-review
 
+        dbg(TRANSPORT_CHANNEL, "Commencing close...\n");
+
+        call Transport.close(clientSocket);
     }
 }

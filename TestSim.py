@@ -167,12 +167,14 @@ def main():
     # s.routeDMP(9);
     # s.runTime(100);
     s.cmdTestClient(3, 9, 1, 5, 5);
-    s.runTime(100);
+    s.runTime(500);
+    # s.cmdTestClient(5, 9, 1, 5, 5);
+    # s.runTime(100);
     # s.runTime(100);
     # s.routeDMP(2);
     # s.runTime(100);
     # s.routeDMP(1);
-    s.runTime(1000);
+    s.runTime(10000);
     return
 
     s.runTime(1000);

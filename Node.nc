@@ -90,6 +90,8 @@ implementation
 
     event void RoutedSend.received(uint16_t src, pack *package, uint8_t len) 
     {
+        if (package->protocol != PROTOCOL_PING) return;
+        
         dbg(GENERAL_CHANNEL, "Packet received via LSR from %u with payload: %s\n", src, package->payload);
     }
 

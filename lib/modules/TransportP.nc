@@ -66,9 +66,11 @@ implementation {
 
     command socket_t Transport.accept(socket_t fd) {
         tcp_pack ackPack;
-        socket_t clientSocketFd = call Transport.socket();
-        socket_store_t *socket = fdToSocket(fd);
         socket_store_t *clientSocket;
+
+        socket_store_t *socket = fdToSocket(fd);
+
+        socket_t clientSocketFd = call Transport.socket();
 
         if (!clientSocketFd) {
             dbg(TRANSPORT_CHANNEL, "Failed to create new socket.\n");
@@ -113,21 +115,27 @@ implementation {
         tcp_pack ackPack;
         tcp_pack *packet = (tcp_pack*)package->payload;
 
-        fd = findSocketBoundToPort(packet->dest.port);
+        fd = findClientSocket(packet->dest.port, packet->source);
 
+        // Try to find client socket first
         if (!fd) {
-            dbg(TRANSPORT_CHANNEL, "Received on closed port %u.\n", packet->dest.port);
-            return FAIL;
+            fd = findSocketBoundToPort(packet->dest.port);
+
+            if (!fd) {
+                dbg(TRANSPORT_CHANNEL, "Received on closed port %u.\n", packet->dest.port);
+                return FAIL;
+            }
         }
+
+        dbg(TRANSPORT_CHANNEL, "%u is state %x\n", fd, socket->state);
 
         socket = fdToSocket(fd);
 
+        ackPack.source = packet->dest;
+        ackPack.dest = packet->source;
+
         // if SYN
         if (packet->flags & 0x80) {
-
-            ackPack.source = packet->dest;
-            ackPack.dest = packet->source;
-
             // + ACK
             if (packet->flags & 0x40) {
                 if (socket->state == SYN_SENT) {
@@ -152,16 +160,60 @@ implementation {
         }
 
         // ACK
-
-        socket = fdToSocket(findClientSocket(packet->dest.port, packet->source));
         
         if (packet->flags & 0x40) {
             if (socket->state == SYN_RCVD) {
                 socket->state = ESTABLISHED;
                 dbg(TRANSPORT_CHANNEL, "SERVER ESTABLISHED! Got final ACK.\n");
             }
+            else if (socket->state == FIN_WAIT_1) {
+                socket->state = FIN_WAIT_2;
+            }
+            else if (socket->state == LAST_ACK) {
+                socket->state = CLOSED;
+
+                call Transport.release(fd);
+            }
 
             return SUCCESS;
+        }
+
+        // FIN
+
+        if (packet->flags & 0x20) {
+            if (socket->state == ESTABLISHED) {
+                // skipping CLOSE_WAIT to go to LAST_ACK
+                socket->state = LAST_ACK;
+
+                // send back FIN
+                ackPack.flags = 0x20;
+                call RoutedSend.send(socket->dest.addr, (uint8_t*)&ackPack, sizeof(ackPack), PROTOCOL_TCP);
+                dbg(TRANSPORT_CHANNEL, "Responding to FIN with FIN, to LAST_ACK\n");
+
+                return SUCCESS;
+            }
+            else if (socket->state == FIN_WAIT_1 || socket->state == FIN_WAIT_2) {
+
+                // send back FIN
+                ackPack.flags = 0x20;
+                call RoutedSend.send(socket->dest.addr, (uint8_t*)&ackPack, sizeof(ackPack), PROTOCOL_TCP);
+
+                if (socket->state == FIN_WAIT_1) {
+                    socket->state = CLOSING;
+                    dbg(TRANSPORT_CHANNEL, "Responding to FIN with FIN, now CLOSING\n");
+                } else {
+                    // Skipping TIME_WAIT for now
+
+                    // socket->state = TIME_WAIT;
+                    dbg(TRANSPORT_CHANNEL, "Responding to FIN with FIN, now CLOSED\n");
+
+                    socket->state = CLOSED;
+
+                    call Transport.release(fd);
+                }
+
+                return SUCCESS;
+            }
         }
 
         dbg(TRANSPORT_CHANNEL, "Unrecognized TCP type.\n");
@@ -173,13 +225,14 @@ implementation {
         if (package->protocol == PROTOCOL_TCP) {
             tcp_pack *packet = (tcp_pack*)package->payload;
             
-            dbg(TRANSPORT_CHANNEL, "TCP packet received via LSR from %u with flags:\n", src);
+            dbg(TRANSPORT_CHANNEL, "TCP packet received via LSR from %u with flags: %p\n", src, packet->flags);
             
             if (packet->flags & 0x80) dbg(TRANSPORT_CHANNEL, "SYN\n", src);
             if (packet->flags & 0x40) dbg(TRANSPORT_CHANNEL, "ACK\n", src);
-        }
+            if (packet->flags & 0x20) dbg(TRANSPORT_CHANNEL, "FIN\n", src);
 
-        call Transport.receive(package);
+            call Transport.receive(package);
+        }
     }
 
     command uint16_t Transport.read(socket_t fd, uint8_t *buff, uint16_t bufflen) {
@@ -194,6 +247,8 @@ implementation {
             return FAIL;
         }
 
+        socket->dest = *addr;
+
         // SYN
         packet.flags = 0x80;
 
@@ -203,19 +258,38 @@ implementation {
 
         socket->state = SYN_SENT;
 
-        dbg(TRANSPORT_CHANNEL, "Active open, SYN to %u\n", addr->addr);
+        dbg(TRANSPORT_CHANNEL, "Active open, SYN to %u\n", packet.dest.addr);
 
-        call RoutedSend.send(addr->addr, (uint8_t*)&packet, sizeof(packet), PROTOCOL_TCP);
+        call RoutedSend.send(packet.dest.addr, (uint8_t*)&packet, sizeof(packet), PROTOCOL_TCP);
 
         return SUCCESS;
     }
 
     command error_t Transport.close(socket_t fd) {
+        tcp_pack packet;
+        socket_store_t *socket = fdToSocket(fd);
 
+        // send FIN
+        packet.flags = 0x20;
+
+        packet.source.port = TOS_NODE_ID;
+        packet.source.addr = socket->src;
+        packet.dest = socket->dest;
+        
+        call RoutedSend.send(socket->dest.addr, (uint8_t*)&packet, sizeof(packet), PROTOCOL_TCP);
+
+        dbg(TRANSPORT_CHANNEL, "Closing - FIN_WAIT_1, sent FIN to %u\n", socket->dest.addr);
+        
+        socket->state = FIN_WAIT_1;
+
+        return SUCCESS;
     }
 
     command error_t Transport.release(socket_t fd) {
+        socket_store_t *socket = fdToSocket(fd);
+        socket->src = 0;
 
+        return SUCCESS;
     }
 
     command error_t Transport.listen(socket_t fd) {

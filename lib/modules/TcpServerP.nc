@@ -8,6 +8,7 @@ module TcpServerP {
 
 implementation {
     socket_t serverSocket;
+    socket_t clientSocket;
 
     command void TcpServer.startServer(socket_port_t port) {
         socket_addr_t socket_address;
