@@ -95,11 +95,10 @@ implementation {
                     }
                 }
 
-                dbg(GENERAL_CHANNEL, "\n", readNum, i);
-                dbg(GENERAL_CHANNEL, "[SERVER APPLICATION]\n", readNum, i);
-                dbg(GENERAL_CHANNEL, "Read %u bytes from client #%u:\n", readNum, i);
+                dbg(GENERAL_CHANNEL, "\n");
+                dbg(GENERAL_CHANNEL, "[SERVER APPLICATION]\n");
+                dbg(GENERAL_CHANNEL, "Read %u bytes from client\n", readNum);
                 dbg(GENERAL_CHANNEL, ">>> %s\n", str);
-                dbg(GENERAL_CHANNEL, "\n", readNum, i);
 
                 if (readNum % 2 == 0) {
                     memcpy(buff + lastRead - 1, buff, 1);
