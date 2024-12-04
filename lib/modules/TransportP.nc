@@ -36,6 +36,10 @@ implementation {
 
         return (socket_t)NULL;
     }
+
+    command socket_t Transport.findSocket(socket_port_t src, socket_addr_t dest) {
+        return findClientSocket(src, dest.port, dest.addr);
+    }
     
     command socket_t Transport.socket() {
         socket_t id;
@@ -381,5 +385,9 @@ implementation {
         // advertisedWindow = SOCKET_BUFFER_SIZE - ((socket->nextExpected - 1) - socket->lastRead);
 
         return bufflen;
+    }
+
+    command enum socket_state Transport.checkSocketState(socket_t fd) {
+        return fdToSocket(fd)->state;
     }
 }

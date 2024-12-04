@@ -8,10 +8,10 @@ module TcpClientP {
 
 implementation {
     socket_t clientSocket;
+    socket_addr_t serverAddress;
 
     command error_t TcpClient.startClient(uint8_t srcPort, uint16_t dest, uint8_t destPort) {
         socket_addr_t socketAddress;
-        socket_addr_t serverAddress;
 
         clientSocket = call Transport.socket();
 
@@ -37,19 +37,17 @@ implementation {
             return FAIL;
         }
 
-        dbg(TRANSPORT_CHANNEL, "Will close in 5...\n");
-
-        // Close in 8
         call writeTimer.startOneShot(8000);
 
         return SUCCESS;
     }
 
     event void writeTimer.fired() {
-        // Just using this to close for the sake of mid-review
 
-        dbg(TRANSPORT_CHANNEL, "Commencing close...\n");
-
-        call Transport.close(clientSocket);
+        if (call Transport.checkSocketState(clientSocket) != ESTABLISHED) {
+            dbg(TRANSPORT_CHANNEL, "Can't write now, not established\n");
+            // call Transport.connect(clientSocket, &serverAddress);
+            return;
+        }
     }
 }

@@ -17,7 +17,7 @@ implementation {
 
         if (!serverSocket) {
             dbg(TRANSPORT_CHANNEL, "No socket available.\n");
-            return;
+            return FAIL;
         }
 
         socket_address.port = port;
