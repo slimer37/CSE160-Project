@@ -14,4 +14,7 @@ implementation {
 
     components LinkStateRoutingC;
     RoutedSendP.LinkStateRouting -> LinkStateRoutingC;
+
+    components new TimerMilliC() as resendTimer;
+    RoutedSendP.resendTimer -> resendTimer;
 }

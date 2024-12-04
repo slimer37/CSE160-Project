@@ -6,11 +6,16 @@ module RoutedSendP {
     uses interface Receive;
 
     uses interface LinkStateRouting;
+
+    uses interface Timer<TMilli> as resendTimer;
 }
 
 implementation {
     pack packet;
-    uint8_t floodSeq;
+    uint8_t sequenceNum;
+
+    pack unackedPacks[10];
+    uint8_t numUnacked = 0;
 
     void makePack(pack *Package, uint16_t src, uint16_t dest, uint8_t TTL, uint8_t protocol, uint16_t seq, uint8_t *payload, uint8_t length) {
         Package->src = src;
@@ -24,7 +29,7 @@ implementation {
     command void RoutedSend.send(uint16_t dest, uint8_t *payload, uint8_t len, uint8_t protocol) {
         uint16_t nextHop;
 
-        makePack(&packet, TOS_NODE_ID, dest, MAX_TTL, protocol, floodSeq++, payload, len);
+        makePack(&packet, TOS_NODE_ID, dest, MAX_TTL, protocol, sequenceNum++, payload, len);
 
         nextHop = call LinkStateRouting.getNextHop(dest);
 
@@ -34,9 +39,38 @@ implementation {
         }
 
         if (call SimpleSend.send(packet, nextHop) == SUCCESS) {
-            dbg(ROUTING_CHANNEL, "Routing \"%s\" from %u to %u through %u\n", payload, TOS_NODE_ID, dest, nextHop);
+            dbg(ROUTING_CHANNEL, "Routing \"%s\" from %u to %u through %u (%u unacked)\n", payload, TOS_NODE_ID, dest, nextHop, numUnacked);
+
+            if (protocol == PROTOCOL_PINGREPLY) return;
+
+            if (numUnacked == 9) {
+                dbg(ROUTING_CHANNEL, "(Too many unacked)\n");
+            } else {
+                memcpy(unackedPacks + numUnacked, &packet, sizeof(pack));
+                numUnacked++;
+            }
         } else {
             dbg(ROUTING_CHANNEL, "Failed to send\n");
+        }
+
+        call resendTimer.stop();
+        call resendTimer.startPeriodic(1000);
+    }
+
+    event void resendTimer.fired() {
+        uint16_t nextHop;
+        pack *resentPack;
+
+        if (numUnacked == 0) return;
+
+        resentPack = &unackedPacks[numUnacked - 1];
+        nextHop = call LinkStateRouting.getNextHop(resentPack->dest);
+
+        if (call SimpleSend.send(*resentPack, nextHop) == SUCCESS) {
+            dbg(GENERAL_CHANNEL, "[An unacked message is being resent to %u]\n", resentPack->dest);
+            dbg(ROUTING_CHANNEL, "(Unacked repeat [%u]) Routing \"%s\" from %u to %u through %u\n", numUnacked, resentPack->payload, TOS_NODE_ID, resentPack->dest, nextHop);
+        } else {
+            dbg(ROUTING_CHANNEL, "Failed to resend\n");
         }
     }
 
@@ -45,7 +79,45 @@ implementation {
         pack *receivedPacket = (pack*)payload;
 
         if (receivedPacket->dest == TOS_NODE_ID) {
-            signal RoutedSend.received(receivedPacket->src, receivedPacket, len);
+
+            if (receivedPacket->protocol == PROTOCOL_PINGREPLY) {
+                uint8_t i;
+                bool found;
+                uint16_t ackedSeq = *(uint16_t*)receivedPacket->payload;
+
+                if (numUnacked == 0) return msg;
+
+                for (i = 0; i < numUnacked; i++) {
+                    if (unackedPacks[i].seq == ackedSeq) {
+                        numUnacked--;
+                        found = TRUE;
+                        break;
+                    }
+                }
+
+                if (!found) {
+                    dbg(ROUTING_CHANNEL, "Failed to match ack packet from %u for seq %u\n", receivedPacket->src, ackedSeq);
+                } else {
+                    dbg(ROUTING_CHANNEL, "Received ack packet from %u matching %u/%u (seq %u)\n", receivedPacket->src, i, numUnacked, ackedSeq);
+                }
+
+                for (; i < numUnacked; i++) {
+                    unackedPacks[i] = unackedPacks[i + 1];
+                }
+            }
+            else {
+                pack ack;
+                uint8_t array[2];
+                array[0] = receivedPacket->seq & 0xff;
+                array[1] = (receivedPacket->seq >> 8);
+
+                signal RoutedSend.received(receivedPacket->src, receivedPacket, len);
+
+                dbg(ROUTING_CHANNEL, "Acking packet from %u, seq %u\n", receivedPacket->src, receivedPacket->seq);
+
+                call RoutedSend.send(receivedPacket->src, array, 2, PROTOCOL_PINGREPLY);
+            }
+            
             return msg;
         }
 
