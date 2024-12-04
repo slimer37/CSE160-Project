@@ -261,7 +261,7 @@ implementation {
             }
         }
 
-        dbg(TRANSPORT_CHANNEL, "Invalid state for %s\n", getTcpFlagsAsString(packet->flags));
+        dbg(TRANSPORT_CHANNEL, "Can't respond to %s right now.\n", getTcpFlagsAsString(packet->flags));
 
         return FAIL;
     }
