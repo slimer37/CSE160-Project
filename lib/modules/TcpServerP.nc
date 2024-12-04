@@ -76,7 +76,7 @@ implementation {
                 uint8_t readNum;
                 char str[256] = "";
 
-                readNum = call Transport.read(client, buff + lastRead, 64);
+                readNum = call Transport.read(client, buff + lastRead, 64 - lastRead);
 
                 if (readNum == 0) {
                     continue;
@@ -84,7 +84,11 @@ implementation {
 
                 for (i = 0; i < lastRead + readNum - 1; i += 2) {
                     char repr[5];
+
                     uint16_t value = *(uint16_t*)(buff + i);
+
+                    dbg(GENERAL_CHANNEL, "%u\n", buff[i]);
+                    dbg(GENERAL_CHANNEL, "%u\n", buff[i + 1]);
 
                     sprintf(repr, "%u", value);
 
@@ -97,14 +101,15 @@ implementation {
 
                 dbg(GENERAL_CHANNEL, "\n");
                 dbg(GENERAL_CHANNEL, "[SERVER APPLICATION]\n");
-                dbg(GENERAL_CHANNEL, "Read %u bytes from client\n", readNum);
+                dbg(GENERAL_CHANNEL, "Read %u bytes from client into %u\n", readNum, lastRead);
                 dbg(GENERAL_CHANNEL, ">>> %s\n", str);
 
-                if (readNum % 2 == 0) {
-                    memcpy(buff + lastRead - 1, buff, 1);
+                if ((lastRead + readNum) % 2 == 0) {
                     lastRead = 0;
                 } else {
+                    buff[0] = buff[lastRead + readNum - 1];
                     lastRead = 1;
+                    dbg(GENERAL_CHANNEL, "leftover byte: %u\n", buff[0]);
                 }
             }
         }
