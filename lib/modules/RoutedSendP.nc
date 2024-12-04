@@ -11,12 +11,15 @@ module RoutedSendP {
 }
 
 #define DISABLE_ACKS FALSE
+#define MAX_RETRIES 10
+#define MAX_UNACKED 10
 
 implementation {
     pack packet;
     uint16_t sequenceNum;
 
-    pack unackedPacks[10];
+    pack unackedPacks[MAX_UNACKED];
+    uint8_t retries[MAX_UNACKED];
     uint8_t numUnacked = 0;
 
     void makePack(pack *Package, uint16_t src, uint16_t dest, uint8_t TTL, uint8_t protocol, uint16_t seq, uint8_t *payload, uint8_t length) {
@@ -45,7 +48,7 @@ implementation {
 
             if (protocol == PROTOCOL_PINGREPLY) return;
 
-            if (numUnacked == 9) {
+            if (numUnacked == MAX_UNACKED - 1) {
                 dbg(ROUTING_CHANNEL, "(Too many unacked)\n");
             } else {
                 memcpy(unackedPacks + numUnacked, &packet, sizeof(pack));
@@ -65,12 +68,28 @@ implementation {
     event void resendTimer.fired() {
         uint16_t nextHop;
         pack *resentPack;
+        uint8_t i = 0;
 
         if (numUnacked == 0) return;
 
-        resentPack = &unackedPacks[numUnacked - 1];
+        resentPack = &unackedPacks[i];
         resentPack->seq = sequenceNum++;
         nextHop = call LinkStateRouting.getNextHop(resentPack->dest);
+
+        retries[i]++;
+
+        if (retries[i] > MAX_RETRIES) {
+            numUnacked--;
+
+            for (; i < numUnacked - 1; i++) {
+                unackedPacks[i] = unackedPacks[i + 1];
+                retries[i] = retries[i + 1];
+            }
+
+            retries[numUnacked - 1] = 0;
+
+            return;
+        }
 
         if (call SimpleSend.send(*resentPack, nextHop) == SUCCESS) {
             dbg(GENERAL_CHANNEL, "[An unacked message is being resent to %u]\n", resentPack->dest);
@@ -111,8 +130,9 @@ implementation {
                     dbg(ROUTING_CHANNEL, "Received ack packet from %u matching %u/%u (seq %u)\n", receivedPacket->src, i, numUnacked, ackedSeq);
                 }
 
-                for (i = firstResolved; i < numUnacked; i++) {
+                for (i = firstResolved; i < numUnacked - 1; i++) {
                     unackedPacks[i] = unackedPacks[i + 1];
+                    retries[i] = retries[i + 1];
                 }
             }
             else {
