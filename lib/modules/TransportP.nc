@@ -129,7 +129,7 @@ implementation {
 
         socket = fdToSocket(fd);
 
-        dbg(TRANSPORT_CHANNEL, "%u is state %s\n", fd, getStateAsString(socket->state));
+        dbg(TRANSPORT_CHANNEL, "> Socket %u (Port %u to %u:%u): %s\n", fd, socket->src, socket->dest.addr, socket->dest.port, getStateAsString(socket->state));
 
         ackPack.sourcePort = packet->destPort;
         ackPack.destPort = packet->sourcePort;
@@ -215,9 +215,13 @@ implementation {
 
                 return SUCCESS;
             }
+            else {
+                dbg(TRANSPORT_CHANNEL, "Not in a state to respond to FIN.\n");
+                return FAIL;
+            }
         }
 
-        dbg(TRANSPORT_CHANNEL, "Unrecognized TCP type.\n");
+        dbg(TRANSPORT_CHANNEL, "Unrecognized TCP flags. (was %x)\n", packet->flags);
 
         return FAIL;
     }
@@ -226,7 +230,11 @@ implementation {
         if (package->protocol == PROTOCOL_TCP) {
             tcp_pack *packet = (tcp_pack*)package->payload;
             
-            dbg(TRANSPORT_CHANNEL, "TCP received from %u with flags: %s\n", src, getTcpFlagsAsString(packet->flags));
+            dbg(TRANSPORT_CHANNEL, "\n");
+            dbg(TRANSPORT_CHANNEL, "=== TCP packet received (%u:%u -> %u:%u) with flags [%s] ===\n",
+                src, packet->sourcePort,
+                TOS_NODE_ID, packet->destPort,
+                getTcpFlagsAsString(packet->flags));
 
             call Transport.receive(package);
         }
