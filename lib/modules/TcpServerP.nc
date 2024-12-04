@@ -77,13 +77,12 @@ implementation {
                 char str[256] = "";
 
                 readNum = call Transport.read(client, buff + lastRead, 64);
-                lastRead += readNum;
 
                 if (readNum == 0) {
                     continue;
                 }
 
-                for (i = 0; i < readNum - 1; i += 2) {
+                for (i = 0; i < lastRead + readNum - 1; i += 2) {
                     char repr[5];
                     uint16_t value = *(uint16_t*)(buff + i);
 
@@ -96,11 +95,15 @@ implementation {
                     }
                 }
 
+                dbg(GENERAL_CHANNEL, "\n", readNum, i);
+                dbg(GENERAL_CHANNEL, "[SERVER APPLICATION]\n", readNum, i);
                 dbg(GENERAL_CHANNEL, "Read %u bytes from client #%u:\n", readNum, i);
                 dbg(GENERAL_CHANNEL, ">>> %s\n", str);
+                dbg(GENERAL_CHANNEL, "\n", readNum, i);
 
                 if (readNum % 2 == 0) {
                     memcpy(buff + lastRead - 1, buff, 1);
+                    lastRead = 0;
                 } else {
                     lastRead = 1;
                 }

@@ -57,7 +57,8 @@ implementation {
             return;
         }
 
-        dbg(TRANSPORT_CHANNEL, "Writing numbers to transfer:\n");
+        dbg(TRANSPORT_CHANNEL, "\n");
+        dbg(TRANSPORT_CHANNEL, "[CLIENT] Writing numbers to transfer:\n");
 
         for (i = progress; i < transferMax && i < 64; i++) {
             buff[i * 2] = (i + 1) & 0xff;
