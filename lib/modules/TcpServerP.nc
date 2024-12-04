@@ -10,7 +10,7 @@ implementation {
     socket_t serverSocket;
     socket_t clientSocket;
 
-    command void TcpServer.startServer(socket_port_t port) {
+    command error_t TcpServer.startServer(socket_port_t port) {
         socket_addr_t socket_address;
 
         serverSocket = call Transport.socket();
@@ -27,15 +27,19 @@ implementation {
             dbg(TRANSPORT_CHANNEL, "Bound server to port %u.\n", port);
         } else {
             dbg(TRANSPORT_CHANNEL, "Failed to bind to port %u.\n", port);
+            return FAIL;
         }
 
         if (call Transport.listen(serverSocket) == SUCCESS) {
             dbg(TRANSPORT_CHANNEL, "Listening on %u.\n", port);
         } else {
             dbg(TRANSPORT_CHANNEL, "Couldn't set %u to listen.\n", port);
+            return FAIL;
         }
 
         call acceptConnectionTimer.startPeriodic(ATTEMPT_CONNECTION_TIME);
+
+        return SUCCESS;
     }
 
     event void acceptConnectionTimer.fired() {

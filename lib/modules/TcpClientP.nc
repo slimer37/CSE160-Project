@@ -9,7 +9,7 @@ module TcpClientP {
 implementation {
     socket_t clientSocket;
 
-    command void TcpClient.startClient(uint8_t srcPort, uint16_t dest, uint8_t destPort) {
+    command error_t TcpClient.startClient(uint8_t srcPort, uint16_t dest, uint8_t destPort) {
         socket_addr_t socketAddress;
         socket_addr_t serverAddress;
 
@@ -26,7 +26,7 @@ implementation {
         }
         else {
             dbg(TRANSPORT_CHANNEL, "Failed to bind client.\n");
-            return;
+            return FAIL;
         }
 
         if (call Transport.connect(clientSocket, &serverAddress) == SUCCESS) {
@@ -34,13 +34,15 @@ implementation {
         }
         else {
             dbg(TRANSPORT_CHANNEL, "Couldn't start connecting.\n");
-            return;
+            return FAIL;
         }
 
         dbg(TRANSPORT_CHANNEL, "Will close in 5...\n");
 
         // Close in 5
         call writeTimer.startOneShot(5000);
+
+        return SUCCESS;
     }
 
     event void writeTimer.fired() {
