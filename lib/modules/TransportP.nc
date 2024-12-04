@@ -146,10 +146,6 @@ implementation {
         return clientSocketFd;
     }
 
-    command uint16_t Transport.write(socket_t fd, uint8_t *buff, uint16_t bufflen) {
-
-    }
-
     command error_t Transport.receive(pack* package) {
         socket_store_t *socket;
         socket_t fd;
@@ -282,10 +278,6 @@ implementation {
         }
     }
 
-    command uint16_t Transport.read(socket_t fd, uint8_t *buff, uint16_t bufflen) {
-
-    }
-
     command error_t Transport.connect(socket_t fd, socket_addr_t* addr) {
         socket_store_t *socket = fdToSocket(fd);
         tcp_pack packet;
@@ -350,5 +342,46 @@ implementation {
         socket->state = LISTEN;
 
         return SUCCESS;
+    }
+
+    command uint16_t Transport.write(socket_t fd, uint8_t *buff, uint16_t bufflen) {
+        socket_store_t *socket = fdToSocket(fd);
+
+        // You can write into the buffer as long as there's empty space besides
+        // any un-acked/unsent data
+        uint16_t maxWritableBytes = SOCKET_BUFFER_SIZE - (socket->lastWritten - socket->lastAck);
+
+        if (bufflen > maxWritableBytes) {
+            bufflen = maxWritableBytes;
+        }
+
+        // Copy bufflen bytes from buff into the socket's send buffer
+        memcpy((socket->sendBuff + socket->lastWritten), buff, bufflen);
+        
+        socket->lastWritten += bufflen;
+
+        return bufflen;
+    }
+
+    command uint16_t Transport.read(socket_t fd, uint8_t *buff, uint16_t bufflen) {
+        socket_store_t *socket = fdToSocket(fd);
+
+        // You can read as many bytes as have been continuously received
+        uint16_t maxReadableBytes = socket->nextExpected - 1 - socket->lastRead;
+
+        if (bufflen > maxReadableBytes) {
+            bufflen = maxReadableBytes;
+        }
+
+        // Copy bufflen bytes from the socket's receive buffer into buff
+        memcpy(buff, (socket->rcvdBuff + socket->lastRead), bufflen);
+
+        socket->lastRead += bufflen;
+
+        // Advertised window is however much space is available at the end of the buffer,
+        // plus the space freed by reading
+        socket->advertisedWindow = SOCKET_BUFFER_SIZE - ((socket->nextExpected - 1) - socket->lastRead);
+
+        return bufflen;
     }
 }
