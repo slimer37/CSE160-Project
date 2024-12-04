@@ -33,8 +33,13 @@ char* getTcpFlagsAsString(nx_uint8_t flags) {
     if (flags & ACK) strcat(flagLabel, "ACK+");
     if (flags & FIN) strcat(flagLabel, "FIN+");
 
-    // Remove last '+'
-    flagLabel[strlen(flagLabel) - 1] = '\0';
+    if (strlen(flagLabel) > 0) {
+        // Remove last '+'
+        flagLabel[strlen(flagLabel) - 1] = '\0';
+    }
+
+    if (flags == 0) strcat(flagLabel, "None");
+    else if (strlen(flagLabel) == 0) strcat(flagLabel, "Unknown");
 
     return flagLabel;
 }
