@@ -226,11 +226,7 @@ implementation {
         if (package->protocol == PROTOCOL_TCP) {
             tcp_pack *packet = (tcp_pack*)package->payload;
             
-            dbg(TRANSPORT_CHANNEL, "TCP packet received via LSR from %u with flags: %p\n", src, packet->flags);
-            
-            if (packet->flags & SYN) dbg(TRANSPORT_CHANNEL, "SYN\n", src);
-            if (packet->flags & ACK) dbg(TRANSPORT_CHANNEL, "ACK\n", src);
-            if (packet->flags & FIN) dbg(TRANSPORT_CHANNEL, "FIN\n", src);
+            dbg(TRANSPORT_CHANNEL, "TCP received from %u with flags: %s\n", src, getTcpFlagsAsString(packet->flags));
 
             call Transport.receive(package);
         }

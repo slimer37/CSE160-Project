@@ -25,4 +25,17 @@ typedef nx_struct tcp_pack {
     nx_uint8_t payload[TCP_MAX_PAYLOAD_SIZE];
 } tcp_pack;
 
+char* getTcpFlagsAsString(nx_uint8_t flags) {
+    char flagLabel[32] = "";
+            
+    if (flags & SYN) strcat(flagLabel, "SYN+");
+    if (flags & ACK) strcat(flagLabel, "ACK+");
+    if (flags & FIN) strcat(flagLabel, "FIN+");
+
+    // Remove last '+'
+    flagLabel[strlen(flagLabel) - 1] = '\0';
+
+    return flagLabel;
+}
+
 #endif
