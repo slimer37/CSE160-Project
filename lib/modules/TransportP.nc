@@ -43,6 +43,11 @@ implementation {
         for (id = 0; id < MAX_NUM_OF_SOCKETS; id++) {
             // If port is unassigned this socket is not in use
             if (sockets[id].src == 0) {
+
+                // Initialize empty addressing
+                sockets[id].dest.addr = 0;
+                sockets[id].dest.port = 0;
+
                 return id + 1;
             }
         }
@@ -68,30 +73,24 @@ implementation {
     }
 
     command socket_t Transport.accept(socket_t fd) {
-        socket_store_t *clientSocket;
+        socket_store_t *clientSocket = NULL;
 
-        socket_store_t *socket = fdToSocket(fd);
+        socket_store_t *listenSocket = fdToSocket(fd);
 
-        socket_t clientSocketFd = call Transport.socket();
+        uint8_t id;
 
-        if (!clientSocketFd) {
-            dbg(TRANSPORT_CHANNEL, "Failed to create new socket.\n");
-            return clientSocketFd;
+        // Find the first socket that has received a SYN for this port
+        for (id = 0; id < MAX_NUM_OF_SOCKETS; id++) {
+            if (sockets[id].src == listenSocket->src && sockets[id].state == LISTEN && sockets[id].dest.addr != 0) {
+                clientSocket = &sockets[id];
+                break;
+            }
         }
 
-        clientSocket = fdToSocket(clientSocketFd);
-
-        if (socket->state == SYN_RCVD) {
+        if (clientSocket)
+        {
             tcp_pack ackPack;
-
-            // copy socket
-            *clientSocket = *socket;
-
-            clientSocket->state = SYN_RCVD;
-
-            socket->dest.port = 0;
-            socket->dest.addr = 0;
-            socket->state = LISTEN;
+            socket_t fd = id + 1;
 
             // form packet
 
@@ -101,8 +100,48 @@ implementation {
 
             call RoutedSend.send(clientSocket->dest.addr, (uint8_t*)&ackPack, sizeof(ackPack), PROTOCOL_TCP);
 
-            dbg(TRANSPORT_CHANNEL, "Accepted connection from %u, SYN + ACK ing\n", clientSocket->dest.addr);
+            dbg(TRANSPORT_CHANNEL, "Accepted connection socket %u, sending SYN + ACK\n", fd);
+
+            clientSocket->state = SYN_RCVD;
+
+            return fd;
         }
+        else {
+            return NULL;
+        }
+    }
+
+    socket_t passiveOpenNewSocket(socket_store_t *listenSocket, uint16_t destAddr, socket_port_t destPort) {
+        socket_store_t *clientSocket;
+
+        socket_t clientSocketFd;
+
+        if (listenSocket->state != LISTEN) {
+            dbg(TRANSPORT_CHANNEL, "Can't passive open using a non-LISTEN socket.\n");
+            return 0;
+        }
+
+        // Try to get a new socket
+
+        clientSocketFd = call Transport.socket();
+
+        if (!clientSocketFd) {
+            dbg(TRANSPORT_CHANNEL, "Failed to create new socket.\n");
+            return clientSocketFd;
+        }
+
+        clientSocket = fdToSocket(clientSocketFd);
+
+        // Copy details from listen socket
+        
+        *clientSocket = *listenSocket;
+
+        clientSocket->state = LISTEN;
+
+        clientSocket->dest.port = destPort;
+        clientSocket->dest.addr = destAddr;
+
+        dbg(TRANSPORT_CHANNEL, "Passively opened new socket (FD#%u -> %u:%u).\n", clientSocketFd, destAddr, destPort);
 
         return clientSocketFd;
     }
@@ -155,11 +194,9 @@ implementation {
                 }
             }
             else if (socket->state == LISTEN) {
-                socket->state = SYN_RCVD;
-                socket->dest.addr = sender;
-                socket->dest.port = packet->sourcePort;
-
                 dbg(TRANSPORT_CHANNEL, "SYN_RCVD from %u\n", sender);
+
+                passiveOpenNewSocket(socket, sender, packet->sourcePort);
 
                 return SUCCESS;
             }
@@ -297,6 +334,8 @@ implementation {
     command error_t Transport.release(socket_t fd) {
         socket_store_t *socket = fdToSocket(fd);
         socket->src = 0;
+        socket->dest.port = 0;
+        socket->dest.addr = 0;
 
         return SUCCESS;
     }
