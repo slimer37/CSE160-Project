@@ -164,12 +164,16 @@ implementation {
             fd = findSocketBoundToPort(packet->destPort);
 
             if (!fd) {
-                dbg(TRANSPORT_CHANNEL, "Received on closed port %u.\n", packet->destPort);
+                dbg(TRANSPORT_CHANNEL, "Received on unbound port %u.\n", packet->destPort);
                 return FAIL;
             }
         }
 
         socket = fdToSocket(fd);
+
+        if (socket->state == CLOSED) {
+            dbg(TRANSPORT_CHANNEL, "Received on CLOSED port %u.\n", packet->destPort);
+        }
 
         dbg(TRANSPORT_CHANNEL, "> Socket %u (Port %u to %u:%u): %s\n", fd, socket->src, socket->dest.addr, socket->dest.port, getStateAsString(socket->state));
 
