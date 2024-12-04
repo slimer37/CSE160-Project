@@ -92,8 +92,7 @@ implementation {
 
             // form packet
 
-            // SYN + ACK
-            ackPack.flags = 0x80 | 0x40;
+            ackPack.flags = SYN | ACK;
             ackPack.sourcePort = clientSocket->src;
             ackPack.destPort = clientSocket->dest.port;
 
@@ -136,12 +135,12 @@ implementation {
         ackPack.destPort = packet->sourcePort;
 
         // if SYN
-        if (packet->flags & 0x80) {
+        if (packet->flags & SYN) {
             // + ACK
-            if (packet->flags & 0x40) {
+            if (packet->flags & ACK) {
                 if (socket->state == SYN_SENT) {
                     // ACK back
-                    ackPack.flags = 0x40;
+                    ackPack.flags = ACK;
 
                     socket->state = ESTABLISHED;
 
@@ -163,7 +162,7 @@ implementation {
 
         // ACK
         
-        if (packet->flags & 0x40) {
+        if (packet->flags & ACK) {
             if (socket->state == SYN_RCVD) {
                 socket->state = ESTABLISHED;
                 dbg(TRANSPORT_CHANNEL, "SERVER ESTABLISHED! Got final ACK.\n");
@@ -182,13 +181,13 @@ implementation {
 
         // FIN
 
-        if (packet->flags & 0x20) {
+        if (packet->flags & FIN) {
             if (socket->state == ESTABLISHED) {
                 // skipping CLOSE_WAIT to go to LAST_ACK
                 socket->state = LAST_ACK;
 
                 // send back FIN
-                ackPack.flags = 0x20;
+                ackPack.flags = FIN;
                 call RoutedSend.send(sender, (uint8_t*)&ackPack, sizeof(ackPack), PROTOCOL_TCP);
                 dbg(TRANSPORT_CHANNEL, "Responding to FIN with FIN, to LAST_ACK\n");
 
@@ -197,7 +196,7 @@ implementation {
             else if (socket->state == FIN_WAIT_1 || socket->state == FIN_WAIT_2) {
 
                 // send back FIN
-                ackPack.flags = 0x20;
+                ackPack.flags = FIN;
                 call RoutedSend.send(sender, (uint8_t*)&ackPack, sizeof(ackPack), PROTOCOL_TCP);
 
                 if (socket->state == FIN_WAIT_1) {
@@ -229,9 +228,9 @@ implementation {
             
             dbg(TRANSPORT_CHANNEL, "TCP packet received via LSR from %u with flags: %p\n", src, packet->flags);
             
-            if (packet->flags & 0x80) dbg(TRANSPORT_CHANNEL, "SYN\n", src);
-            if (packet->flags & 0x40) dbg(TRANSPORT_CHANNEL, "ACK\n", src);
-            if (packet->flags & 0x20) dbg(TRANSPORT_CHANNEL, "FIN\n", src);
+            if (packet->flags & SYN) dbg(TRANSPORT_CHANNEL, "SYN\n", src);
+            if (packet->flags & ACK) dbg(TRANSPORT_CHANNEL, "ACK\n", src);
+            if (packet->flags & FIN) dbg(TRANSPORT_CHANNEL, "FIN\n", src);
 
             call Transport.receive(package);
         }
@@ -252,8 +251,7 @@ implementation {
 
         socket->dest = *addr;
 
-        // SYN
-        packet.flags = 0x80;
+        packet.flags = SYN;
 
         packet.sourcePort = socket->src;
         packet.destPort = addr->port;
@@ -273,7 +271,7 @@ implementation {
         uint16_t partner = socket->dest.addr;
 
         // send FIN
-        packet.flags = 0x20;
+        packet.flags = FIN;
 
         packet.sourcePort = socket->src;
         packet.destPort = socket->dest.port;

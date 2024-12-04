@@ -8,6 +8,12 @@ enum {
 	TCP_MAX_PAYLOAD_SIZE = PACKET_MAX_PAYLOAD_SIZE - TCP_HEADER_LENGTH
 };
 
+enum tcpFlags {
+    ACK = 4,
+    SYN = 2,
+    FIN = 1
+};
+
 typedef nx_struct tcp_pack {
     // nx_uint8_t = nx_socket_port_t;
     nx_uint8_t sourcePort;
