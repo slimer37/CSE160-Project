@@ -217,6 +217,8 @@ implementation {
 
                 call Transport.release(fd);
 
+                dbg(TRANSPORT_CHANNEL, "Final FIN was ACKed, now CLOSED\n");
+
                 return SUCCESS;
             }
         }
@@ -231,29 +233,25 @@ implementation {
                 // send back FIN
                 ackPack.flags = FIN;
                 call RoutedSend.send(sender, (uint8_t*)&ackPack, sizeof(ackPack), PROTOCOL_TCP);
-                dbg(TRANSPORT_CHANNEL, "Responding to FIN with FIN, to LAST_ACK\n");
+                dbg(TRANSPORT_CHANNEL, "Responding to FIN with FIN (skipping CLOSE_WAIT), to LAST_ACK\n");
 
                 return SUCCESS;
             }
-            else if (socket->state == FIN_WAIT_1 || socket->state == FIN_WAIT_2) {
+            else if (socket->state == FIN_WAIT_1) {
 
-                // send back FIN
-                ackPack.flags = FIN;
+                // send back ACK
+                ackPack.flags = ACK;
                 call RoutedSend.send(sender, (uint8_t*)&ackPack, sizeof(ackPack), PROTOCOL_TCP);
 
-                if (socket->state == FIN_WAIT_1) {
-                    socket->state = CLOSING;
-                    dbg(TRANSPORT_CHANNEL, "Responding to FIN with FIN, now CLOSING\n");
-                } else {
-                    // Skipping TIME_WAIT for now
+                // Skipping TIME_WAIT and FIN_WAIT_2
 
-                    // socket->state = TIME_WAIT;
-                    dbg(TRANSPORT_CHANNEL, "Responding to FIN with FIN, now CLOSED\n");
+                socket->state = CLOSED;
+                
+                dbg(TRANSPORT_CHANNEL, "Responding to FIN with ACK, now CLOSED\n");
 
-                    socket->state = CLOSED;
+                socket->state = CLOSED;
 
-                    call Transport.release(fd);
-                }
+                call Transport.release(fd);
 
                 return SUCCESS;
             }
@@ -380,7 +378,7 @@ implementation {
 
         // Advertised window is however much space is available at the end of the buffer,
         // plus the space freed by reading
-        socket->advertisedWindow = SOCKET_BUFFER_SIZE - ((socket->nextExpected - 1) - socket->lastRead);
+        // advertisedWindow = SOCKET_BUFFER_SIZE - ((socket->nextExpected - 1) - socket->lastRead);
 
         return bufflen;
     }

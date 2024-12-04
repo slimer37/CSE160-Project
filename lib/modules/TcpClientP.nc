@@ -39,8 +39,8 @@ implementation {
 
         dbg(TRANSPORT_CHANNEL, "Will close in 5...\n");
 
-        // Close in 5
-        call writeTimer.startOneShot(5000);
+        // Close in 8
+        call writeTimer.startOneShot(8000);
 
         return SUCCESS;
     }
