@@ -87,9 +87,6 @@ implementation {
 
                     uint16_t value = *(uint16_t*)(buff + i);
 
-                    dbg(GENERAL_CHANNEL, "%u\n", buff[i]);
-                    dbg(GENERAL_CHANNEL, "%u\n", buff[i + 1]);
-
                     sprintf(repr, "%u", value);
 
                     strcat(str, repr);
