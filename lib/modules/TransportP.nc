@@ -58,8 +58,11 @@ implementation {
             return FAIL;
         }
         
-        socket->state = LISTEN;
+        socket->state = CLOSED;
         socket->src = addr->port;
+        
+        socket->dest.port = 0;
+        socket->dest.addr = 0;
 
         return SUCCESS;
     }
@@ -147,6 +150,8 @@ implementation {
                     call RoutedSend.send(sender, (uint8_t*)&ackPack, sizeof(ackPack), PROTOCOL_TCP);
 
                     dbg(TRANSPORT_CHANNEL, "CLIENT ESTABLISHED! Got SYN + ACK, ACK to %u\n", sender);
+
+                    return SUCCESS;
                 }
             }
             else if (socket->state == LISTEN) {
@@ -155,9 +160,9 @@ implementation {
                 socket->dest.port = packet->sourcePort;
 
                 dbg(TRANSPORT_CHANNEL, "SYN_RCVD from %u\n", sender);
-            }
 
-            return SUCCESS;
+                return SUCCESS;
+            }
         }
 
         // ACK
@@ -166,17 +171,21 @@ implementation {
             if (socket->state == SYN_RCVD) {
                 socket->state = ESTABLISHED;
                 dbg(TRANSPORT_CHANNEL, "SERVER ESTABLISHED! Got final ACK.\n");
+
+                return SUCCESS;
             }
             else if (socket->state == FIN_WAIT_1) {
                 socket->state = FIN_WAIT_2;
+
+                return SUCCESS;
             }
             else if (socket->state == LAST_ACK) {
                 socket->state = CLOSED;
 
                 call Transport.release(fd);
-            }
 
-            return SUCCESS;
+                return SUCCESS;
+            }
         }
 
         // FIN
@@ -215,13 +224,9 @@ implementation {
 
                 return SUCCESS;
             }
-            else {
-                dbg(TRANSPORT_CHANNEL, "Not in a state to respond to FIN.\n");
-                return FAIL;
-            }
         }
 
-        dbg(TRANSPORT_CHANNEL, "Unrecognized TCP flags. (was %x)\n", packet->flags);
+        dbg(TRANSPORT_CHANNEL, "Invalid state for %s\n", getTcpFlagsAsString(packet->flags));
 
         return FAIL;
     }
@@ -249,7 +254,7 @@ implementation {
         tcp_pack packet;
         uint16_t endpoint = addr->addr;
 
-        if (socket->state != LISTEN) {
+        if (socket->state != CLOSED) {
             return FAIL;
         }
 
@@ -297,6 +302,14 @@ implementation {
     }
 
     command error_t Transport.listen(socket_t fd) {
+        socket_store_t *socket = fdToSocket(fd);
 
+        if (socket->state != CLOSED) {
+            return FAIL;
+        }
+
+        socket->state = LISTEN;
+
+        return SUCCESS;
     }
 }

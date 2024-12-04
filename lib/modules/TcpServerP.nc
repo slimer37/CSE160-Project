@@ -29,6 +29,12 @@ implementation {
             dbg(TRANSPORT_CHANNEL, "Failed to bind to port %u.\n", port);
         }
 
+        if (call Transport.listen(serverSocket) == SUCCESS) {
+            dbg(TRANSPORT_CHANNEL, "Listening on %u.\n", port);
+        } else {
+            dbg(TRANSPORT_CHANNEL, "Couldn't set %u to listen.\n", port);
+        }
+
         call acceptConnectionTimer.startPeriodic(ATTEMPT_CONNECTION_TIME);
     }
 
