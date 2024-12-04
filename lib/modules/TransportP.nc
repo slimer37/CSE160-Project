@@ -127,9 +127,9 @@ implementation {
             }
         }
 
-        dbg(TRANSPORT_CHANNEL, "%u is state %x\n", fd, socket->state);
-
         socket = fdToSocket(fd);
+
+        dbg(TRANSPORT_CHANNEL, "%u is state %s\n", fd, getStateAsString(socket->state));
 
         ackPack.sourcePort = packet->destPort;
         ackPack.destPort = packet->sourcePort;
