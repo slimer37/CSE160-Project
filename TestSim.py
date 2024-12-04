@@ -144,7 +144,7 @@ class TestSim:
         low = chr(transfer & 0xFF)
         self.sendCMD(self.CMD_TEST_CLIENT, node, "{0}{1}{2}{3}{4}".format(chr(srcPort), chr(dest), chr(destPort), high, low));
     
-    def closeSocket(self, node, dest, srcPort, destPort):
+    def cmdClientClose(self, node, dest, srcPort, destPort):
         self.sendCMD(self.CMD_CLOSE_SOCK, node, "{0}{1}{2}".format(chr(srcPort), chr(dest), chr(destPort)));
 
     def addChannel(self, channelName, out=sys.stdout):
@@ -172,7 +172,7 @@ def main():
     # s.runTime(100);
     s.cmdTestClient(3, 9, 1, 5, 5);
     s.runTime(1000);
-    s.closeSocket(3, 9, 1, 5);
+    s.cmdClientClose(3, 9, 1, 5);
     # s.cmdTestClient(5, 9, 1, 5, 5);
     # s.runTime(100);
     # s.runTime(100);
