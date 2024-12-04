@@ -14,7 +14,7 @@ module RoutedSendP {
 
 implementation {
     pack packet;
-    uint8_t sequenceNum;
+    uint16_t sequenceNum;
 
     pack unackedPacks[10];
     uint8_t numUnacked = 0;
@@ -69,6 +69,7 @@ implementation {
         if (numUnacked == 0) return;
 
         resentPack = &unackedPacks[numUnacked - 1];
+        resentPack->seq = sequenceNum++;
         nextHop = call LinkStateRouting.getNextHop(resentPack->dest);
 
         if (call SimpleSend.send(*resentPack, nextHop) == SUCCESS) {
@@ -88,14 +89,18 @@ implementation {
             if (receivedPacket->protocol == PROTOCOL_PINGREPLY) {
                 uint8_t i;
                 bool found;
+                uint8_t firstResolved;
                 uint16_t ackedSeq = *(uint16_t*)receivedPacket->payload;
 
                 if (numUnacked == 0) return msg;
 
                 for (i = 0; i < numUnacked; i++) {
-                    if (unackedPacks[i].seq == ackedSeq) {
+                    if (unackedPacks[i].seq <= ackedSeq) {
                         numUnacked--;
                         found = TRUE;
+                    }
+
+                    if (unackedPacks[i].seq == ackedSeq) {
                         break;
                     }
                 }
@@ -106,7 +111,7 @@ implementation {
                     dbg(ROUTING_CHANNEL, "Received ack packet from %u matching %u/%u (seq %u)\n", receivedPacket->src, i, numUnacked, ackedSeq);
                 }
 
-                for (; i < numUnacked; i++) {
+                for (i = firstResolved; i < numUnacked; i++) {
                     unackedPacks[i] = unackedPacks[i + 1];
                 }
             }

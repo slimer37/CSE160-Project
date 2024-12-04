@@ -21,7 +21,8 @@ typedef nx_struct tcp_pack {
     nx_uint8_t flags;
     nx_uint32_t sequenceNum;
     nx_uint32_t acknowledgement;
-    nx_uint16_t advertisedWindow;
+    nx_uint8_t advertisedWindow;
+    nx_uint8_t length;
     nx_uint8_t payload[TCP_MAX_PAYLOAD_SIZE];
 } tcp_pack;
 

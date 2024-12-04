@@ -13,6 +13,9 @@ implementation {
     socket_t clientSockets[MAX_CONNECTIONS];
     uint8_t numConnections;
 
+    uint8_t buff[64];
+    uint8_t lastRead;
+
     command error_t TcpServer.startServer(socket_port_t port) {
         socket_addr_t socket_address;
 
@@ -47,7 +50,6 @@ implementation {
 
     event void acceptConnectionTimer.fired() {
         uint8_t i;
-        uint8_t buff[3]; // null-term
         socket_t socket = call Transport.accept(serverSocket);
 
         if (socket) {
@@ -58,7 +60,6 @@ implementation {
 
         for (i = 0; i < numConnections; i++) {
             socket_t client = clientSockets[i];
-            uint8_t readNum;
 
             if (call Transport.checkSocketState(client) == CLOSED) {
                 uint8_t j;
@@ -71,17 +72,39 @@ implementation {
 
                 numConnections--;
                 continue;
+            } else {
+                uint8_t readNum;
+                char str[256] = "";
+
+                readNum = call Transport.read(client, buff + lastRead, 64);
+                lastRead += readNum;
+
+                if (readNum == 0) {
+                    continue;
+                }
+
+                for (i = 0; i < readNum - 1; i += 2) {
+                    char repr[5];
+                    uint16_t value = *(uint16_t*)(buff + i);
+
+                    sprintf(repr, "%u", value);
+
+                    strcat(str, repr);
+
+                    if (i < readNum - 2) {
+                        strcat(str, ", ");
+                    }
+                }
+
+                dbg(GENERAL_CHANNEL, "Read %u bytes from client #%u:\n", readNum, i);
+                dbg(GENERAL_CHANNEL, ">>> %s\n", str);
+
+                if (readNum % 2 == 0) {
+                    memcpy(buff + lastRead - 1, buff, 1);
+                } else {
+                    lastRead = 1;
+                }
             }
-
-            readNum = call Transport.read(client, buff, 2);
-
-            buff[readNum] = '\0';
-
-            if (readNum == 0) {
-                continue;
-            }
-
-            dbg(GENERAL_CHANNEL, "Read %u bytes from client #%u: \"%s\"\n", readNum, i, buff);
         }
     }
 }

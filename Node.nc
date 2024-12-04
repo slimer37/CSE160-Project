@@ -146,7 +146,7 @@ implementation
     }
 
     event void CommandHandler.setTestClient(uint8_t srcPort, uint8_t dest, uint8_t destPort, uint16_t transfer) {
-        call TcpClient.startClient(srcPort, dest, destPort);
+        call TcpClient.startClient(srcPort, dest, destPort, transfer);
         dbg(GENERAL_CHANNEL, "Transfer: %u\n", transfer);
     }
 

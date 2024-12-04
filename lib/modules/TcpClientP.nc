@@ -10,10 +10,15 @@ implementation {
     socket_t clientSocket;
     socket_addr_t serverAddress;
 
-    command error_t TcpClient.startClient(uint8_t srcPort, uint16_t dest, uint8_t destPort) {
+    uint16_t transferMax;
+    uint16_t progress;
+
+    command error_t TcpClient.startClient(uint8_t srcPort, uint16_t dest, uint8_t destPort, uint16_t transfer) {
         socket_addr_t socketAddress;
 
         clientSocket = call Transport.socket();
+
+        transferMax = transfer;
 
         socketAddress.port = srcPort;
         socketAddress.addr = TOS_NODE_ID;
@@ -43,6 +48,8 @@ implementation {
     }
 
     event void writeTimer.fired() {
+        uint8_t buff[128];
+        uint16_t i;
 
         if (call Transport.checkSocketState(clientSocket) != ESTABLISHED) {
             dbg(TRANSPORT_CHANNEL, "Can't write now, not established\n");
@@ -50,7 +57,16 @@ implementation {
             return;
         }
 
-        dbg(TRANSPORT_CHANNEL, "Writing HI\n");
-        call Transport.write(clientSocket, "HI", 2);
+        dbg(TRANSPORT_CHANNEL, "Writing numbers to transfer:\n");
+
+        for (i = progress; i < transferMax && i < 64; i++) {
+            buff[i * 2] = (i + 1) & 0xff;
+            buff[i * 2 + 1] = ((i + 1) >> 8);
+            dbg(TRANSPORT_CHANNEL, "- %u [= %u | %u]\n", *(uint16_t*)(buff + i * 2), buff[i * 2], buff[i * 2 + 1]);
+        }
+
+        dbg(TRANSPORT_CHANNEL, "\n", i);
+        
+        call Transport.write(clientSocket, buff, i * 2);
     }
 }

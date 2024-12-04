@@ -6,7 +6,7 @@ module TransportP {
     uses interface Timer<TMilli> as sendTimer;
 }
 
-#define SEND_TIMER_PERIOD 1000
+#define SEND_TIMER_PERIOD 2000
 
 implementation {
     socket_store_t sockets[MAX_NUM_OF_SOCKETS];
@@ -266,7 +266,9 @@ implementation {
                     socket->effectiveWindow = packet->advertisedWindow - (socket->lastSent - socket->lastAck);
                 }
 
-                dbg(TRANSPORT_CHANNEL, "Byte %u was ACKed by %u advertising W=%u\n", socket->lastAck, socket->dest.addr, packet->advertisedWindow);
+                dbg(TRANSPORT_CHANNEL, "Byte %u was ACKed by %u advertising W=%u, EW=%u\n",
+                    socket->lastAck, socket->dest.addr,
+                    packet->advertisedWindow, socket->effectiveWindow);
 
                 return SUCCESS;
             }
@@ -412,6 +414,8 @@ implementation {
 
         // Copy bufflen bytes from buff into the socket's send buffer
         memcpy((socket->sendBuff + socket->lastWritten), buff, bufflen);
+
+        dbg(TRANSPORT_CHANNEL, "%u/%u bytes were written to the send buffer [i=%u].\n", bufflen, fullLen, socket->lastWritten);
         
         socket->lastWritten += bufflen;
 
@@ -463,11 +467,21 @@ implementation {
         dataPacket.flags = 0;
         dataPacket.sequenceNum = sock->lastAck;
 
-        datalen = strlen(sock->sendBuff + sock->lastAck);
+        datalen = sock->lastWritten - sock->lastAck;
 
         if (datalen > sock->effectiveWindow) {
             datalen = sock->effectiveWindow;
         }
+
+        if (datalen > TCP_MAX_PAYLOAD_SIZE) {
+            datalen = TCP_MAX_PAYLOAD_SIZE;
+        }
+
+        if (datalen == 0 && sock->effectiveWindow > 0) {
+            return;
+        }
+
+        dataPacket.length = datalen;
 
         memcpy(dataPacket.payload, sock->sendBuff + sock->lastAck, datalen);
 
@@ -479,7 +493,8 @@ implementation {
     void receiveData(uint16_t sender, tcp_pack *packet) {
         tcp_pack ack;
         socket_store_t *sock;
-        uint8_t datalen = strlen(packet->payload);
+        uint8_t i;
+        uint8_t datalen = packet->length;
 
         socket_t fd = getTargetedSocket(sender, packet);
 
@@ -497,9 +512,13 @@ implementation {
             datalen = SOCKET_BUFFER_SIZE - sock->nextExpected;
         }
 
-        memcpy(sock->rcvdBuff + sock->nextExpected, packet->payload, datalen);
+        memcpy(sock->rcvdBuff + packet->sequenceNum, packet->payload, datalen);
 
-        dbg(TRANSPORT_CHANNEL, ">>> Received \"%s\" [l=%u/%u @ s=%u]\n", packet->payload, datalen, strlen(packet->payload), packet->sequenceNum);
+        dbg(TRANSPORT_CHANNEL, ">>> Received: [l=%u/%u @ s=%u]\n", datalen, packet->length, packet->sequenceNum);
+
+        for (i = 0; i < datalen; i++) {
+            dbg(TRANSPORT_CHANNEL, "- %u\n", packet->payload[i]);
+        }
 
         ack.flags = ACK;
         ack.destPort = packet->sourcePort;
@@ -512,7 +531,7 @@ implementation {
             sock->nextExpected += datalen;
         }
 
-        dbg(TRANSPORT_CHANNEL, ">>> Buffer: \"%s\" [next=%u]\n", sock->rcvdBuff, sock->nextExpected);
+        dbg(TRANSPORT_CHANNEL, ">>> [next=%u]\n", sock->nextExpected);
 
         ack.acknowledgement = sock->nextExpected;
 
