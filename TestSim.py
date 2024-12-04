@@ -155,7 +155,7 @@ def main():
     s = TestSim();
     s.runTime(10);
     s.loadTopo("example.topo");
-    s.loadNoise("no_noise.txt");
+    s.loadNoise("some_noise.txt");
     s.bootAll();
     s.addChannel(s.COMMAND_CHANNEL);
     # s.addChannel(s.FLOODING_CHANNEL);
@@ -179,7 +179,7 @@ def main():
     # s.routeDMP(2);
     # s.runTime(100);
     # s.routeDMP(1);
-    s.runTime(1000);
+    s.runTime(5000);
     return
 
     s.runTime(1000);
