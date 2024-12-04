@@ -179,7 +179,7 @@ def main():
     # s.routeDMP(2);
     # s.runTime(100);
     # s.routeDMP(1);
-    s.runTime(10000);
+    s.runTime(1000);
     return
 
     s.runTime(1000);

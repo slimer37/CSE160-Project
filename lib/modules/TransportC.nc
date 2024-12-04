@@ -8,4 +8,7 @@ implementation {
 
     components RoutedSendC;
     TransportP.RoutedSend -> RoutedSendC;
+
+    components new TimerMilliC() as timer;
+    TransportP.sendTimer -> timer;
 }

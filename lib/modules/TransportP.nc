@@ -2,7 +2,11 @@ module TransportP {
     provides interface Transport;
 
     uses interface RoutedSend;
+
+    uses interface Timer<TMilli> as sendTimer;
 }
+
+#define SEND_TIMER_PERIOD 1000
 
 implementation {
     socket_store_t sockets[MAX_NUM_OF_SOCKETS];
@@ -51,6 +55,12 @@ implementation {
                 // Initialize empty addressing
                 sockets[id].dest.addr = 0;
                 sockets[id].dest.port = 0;
+
+                // Start with max window
+                sockets[id].effectiveWindow = SOCKET_BUFFER_SIZE;
+
+                sockets[id].lastWritten = sockets[id].lastAck = sockets[id].lastSent = 0;
+                sockets[id].lastRead = sockets[id].lastRcvd = sockets[id].nextExpected = 0;
 
                 return id + 1;
             }
@@ -150,14 +160,8 @@ implementation {
         return clientSocketFd;
     }
 
-    command error_t Transport.receive(pack* package) {
-        socket_store_t *socket;
-        socket_t fd;
-        tcp_pack ackPack;
-        tcp_pack *packet = (tcp_pack*)package->payload;
-        uint16_t sender = package->src;
-
-        fd = findClientSocket(packet->destPort, packet->sourcePort, sender);
+    socket_t getTargetedSocket(uint16_t sender, tcp_pack *packet) {
+        socket_t fd = findClientSocket(packet->destPort, packet->sourcePort, sender);
 
         // Try to find client socket first
         if (!fd) {
@@ -165,8 +169,24 @@ implementation {
 
             if (!fd) {
                 dbg(TRANSPORT_CHANNEL, "Received on unbound port %u.\n", packet->destPort);
-                return FAIL;
+                return 0;
             }
+        }
+
+        return fd;
+    }
+
+    command error_t Transport.receive(pack* package) {
+        socket_store_t *socket;
+        socket_t fd;
+        tcp_pack ackPack;
+        tcp_pack *packet = (tcp_pack*)package->payload;
+        uint16_t sender = package->src;
+        
+        fd = getTargetedSocket(sender, packet);
+
+        if (!fd) {
+            return FAIL;
         }
 
         socket = fdToSocket(fd);
@@ -204,6 +224,10 @@ implementation {
 
                 return SUCCESS;
             }
+
+            dbg(TRANSPORT_CHANNEL, "Can't respond to SYN from %u\n", sender);
+
+            return FAIL;
         }
 
         // ACK
@@ -226,6 +250,23 @@ implementation {
                 call Transport.release(fd);
 
                 dbg(TRANSPORT_CHANNEL, "Final FIN was ACKed, now CLOSED\n");
+
+                return SUCCESS;
+            }
+            else if (socket->state == ESTABLISHED) {
+
+                // Invalid packets
+                if (packet->acknowledgement < socket->lastAck || packet->advertisedWindow > SOCKET_BUFFER_SIZE) return SUCCESS;
+
+                // Set effective window from advertised window
+                if (packet->advertisedWindow == 0) {
+                    socket->effectiveWindow = 0;
+                } else {
+                    socket->lastAck = packet->acknowledgement;
+                    socket->effectiveWindow = packet->advertisedWindow - (socket->lastSent - socket->lastAck);
+                }
+
+                dbg(TRANSPORT_CHANNEL, "Byte %u was ACKed by %u advertising W=%u\n", socket->lastAck, socket->dest.addr, packet->advertisedWindow);
 
                 return SUCCESS;
             }
@@ -270,6 +311,8 @@ implementation {
         return FAIL;
     }
 
+    void receiveData(uint16_t sender, tcp_pack *packet);
+
     event void RoutedSend.received(uint16_t src, pack *package, uint8_t len) {
         if (package->protocol == PROTOCOL_TCP) {
             tcp_pack *packet = (tcp_pack*)package->payload;
@@ -280,7 +323,11 @@ implementation {
                 TOS_NODE_ID, packet->destPort,
                 getTcpFlagsAsString(packet->flags));
 
-            call Transport.receive(package);
+            if (packet->flags == 0) {
+                receiveData(src, packet);
+            } else {
+                call Transport.receive(package);
+            }
         }
     }
 
@@ -334,6 +381,7 @@ implementation {
         socket->src = 0;
         socket->dest.port = 0;
         socket->dest.addr = 0;
+        socket->state = CLOSED;
 
         return SUCCESS;
     }
@@ -352,6 +400,7 @@ implementation {
 
     command uint16_t Transport.write(socket_t fd, uint8_t *buff, uint16_t bufflen) {
         socket_store_t *socket = fdToSocket(fd);
+        uint16_t fullLen = bufflen;
 
         // You can write into the buffer as long as there's empty space besides
         // any un-acked/unsent data
@@ -366,6 +415,10 @@ implementation {
         
         socket->lastWritten += bufflen;
 
+        if (!call sendTimer.isRunning()) {
+            call sendTimer.startPeriodic(SEND_TIMER_PERIOD);
+        }
+
         return bufflen;
     }
 
@@ -373,7 +426,11 @@ implementation {
         socket_store_t *socket = fdToSocket(fd);
 
         // You can read as many bytes as have been continuously received
-        uint16_t maxReadableBytes = socket->nextExpected - 1 - socket->lastRead;
+        uint16_t maxReadableBytes = socket->nextExpected - socket->lastRead;
+
+        if (socket->nextExpected == 0) {
+            return 0;
+        }
 
         if (bufflen > maxReadableBytes) {
             bufflen = maxReadableBytes;
@@ -384,14 +441,94 @@ implementation {
 
         socket->lastRead += bufflen;
 
-        // Advertised window is however much space is available at the end of the buffer,
-        // plus the space freed by reading
-        // advertisedWindow = SOCKET_BUFFER_SIZE - ((socket->nextExpected - 1) - socket->lastRead);
-
         return bufflen;
     }
 
     command enum socket_state Transport.checkSocketState(socket_t fd) {
         return fdToSocket(fd)->state;
+    }
+
+    void sendBufferedData(socket_t fd) {
+        tcp_pack dataPacket;
+        uint8_t datalen;
+        socket_store_t *sock = fdToSocket(fd);
+
+        // At end of buffer, nothing to send
+        if (sock->lastWritten <= sock->lastAck) {
+            return;
+        }
+
+        dataPacket.destPort = sock->dest.port;
+        dataPacket.sourcePort = sock->src;
+        dataPacket.flags = 0;
+        dataPacket.sequenceNum = sock->lastAck;
+
+        datalen = strlen(sock->sendBuff + sock->lastAck);
+
+        if (datalen > sock->effectiveWindow) {
+            datalen = sock->effectiveWindow;
+        }
+
+        memcpy(dataPacket.payload, sock->sendBuff + sock->lastAck, datalen);
+
+        sock->lastSent = sock->lastAck + datalen;
+
+        call RoutedSend.send(sock->dest.addr, (uint8_t*)&dataPacket, sizeof(dataPacket), PROTOCOL_TCP);
+    }
+
+    void receiveData(uint16_t sender, tcp_pack *packet) {
+        tcp_pack ack;
+        socket_store_t *sock;
+        uint8_t datalen = strlen(packet->payload);
+
+        socket_t fd = getTargetedSocket(sender, packet);
+
+        if (!fd) return;
+
+        sock = fdToSocket(fd);
+
+        if (packet->sequenceNum < sock->nextExpected) {
+            return;
+        }
+
+        // Copy into buffer as much as possible
+
+        if (sock->nextExpected + datalen > SOCKET_BUFFER_SIZE) {
+            datalen = SOCKET_BUFFER_SIZE - sock->nextExpected;
+        }
+
+        memcpy(sock->rcvdBuff + sock->nextExpected, packet->payload, datalen);
+
+        dbg(TRANSPORT_CHANNEL, ">>> Received \"%s\" [l=%u/%u @ s=%u]\n", packet->payload, datalen, strlen(packet->payload), packet->sequenceNum);
+
+        ack.flags = ACK;
+        ack.destPort = packet->sourcePort;
+        ack.sourcePort = packet->destPort;
+
+        // Acknowledge with the sequence number of the next expected byte
+
+        // Expected byte only moves forward if the stream is continuous
+        if (sock->nextExpected == packet->sequenceNum) {
+            sock->nextExpected += datalen;
+        }
+
+        dbg(TRANSPORT_CHANNEL, ">>> Buffer: \"%s\" [next=%u]\n", sock->rcvdBuff, sock->nextExpected);
+
+        ack.acknowledgement = sock->nextExpected;
+
+        // + advertised window as in book (0-based nextExpected)
+        ack.advertisedWindow = SOCKET_BUFFER_SIZE - (sock->nextExpected - sock->lastRead);
+        
+        call RoutedSend.send(sender, (uint8_t*)&ack, sizeof(ack), PROTOCOL_TCP);
+    }
+
+    event void sendTimer.fired() {
+        uint8_t i;
+
+        for (i = 0; i < MAX_NUM_OF_SOCKETS; i++) {
+            if (sockets[i].state == ESTABLISHED && sockets[i].lastWritten > 0) {
+                sendBufferedData(i + 1);
+            }
+        }
     }
 }

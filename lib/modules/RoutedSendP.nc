@@ -10,6 +10,8 @@ module RoutedSendP {
     uses interface Timer<TMilli> as resendTimer;
 }
 
+#define DISABLE_ACKS FALSE
+
 implementation {
     pack packet;
     uint8_t sequenceNum;
@@ -53,8 +55,11 @@ implementation {
             dbg(ROUTING_CHANNEL, "Failed to send\n");
         }
 
-        call resendTimer.stop();
-        call resendTimer.startPeriodic(1000);
+        if (DISABLE_ACKS) return;
+
+        if (!call resendTimer.isRunning()) {
+            call resendTimer.startPeriodic(1000);
+        }
     }
 
     event void resendTimer.fired() {

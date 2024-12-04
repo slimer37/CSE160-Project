@@ -49,5 +49,8 @@ implementation {
             // call Transport.connect(clientSocket, &serverAddress);
             return;
         }
+
+        dbg(TRANSPORT_CHANNEL, "Writing HI\n");
+        call Transport.write(clientSocket, "HI", 2);
     }
 }
