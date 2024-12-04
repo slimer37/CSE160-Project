@@ -488,6 +488,9 @@ implementation {
         sock->lastSent = sock->lastAck + datalen;
 
         call RoutedSend.send(sock->dest.addr, (uint8_t*)&dataPacket, sizeof(dataPacket), PROTOCOL_TCP);
+
+        dbg(TRANSPORT_CHANNEL, "\n", datalen);
+        dbg(TRANSPORT_CHANNEL, ">>> Sent %u bytes of data from buffer [lastAck=%u].\n", datalen, sock->lastAck);
     }
 
     void receiveData(uint16_t sender, tcp_pack *packet) {
@@ -502,22 +505,22 @@ implementation {
 
         sock = fdToSocket(fd);
 
-        if (packet->sequenceNum < sock->nextExpected) {
-            return;
-        }
+        if (packet->sequenceNum >= sock->nextExpected) {
 
-        // Copy into buffer as much as possible
+            // Copy into buffer as much as possible
 
-        if (sock->nextExpected + datalen > SOCKET_BUFFER_SIZE) {
-            datalen = SOCKET_BUFFER_SIZE - sock->nextExpected;
-        }
+            if (sock->nextExpected + datalen > SOCKET_BUFFER_SIZE) {
+                datalen = SOCKET_BUFFER_SIZE - sock->nextExpected;
+            }
 
-        memcpy(sock->rcvdBuff + packet->sequenceNum, packet->payload, datalen);
+            memcpy(sock->rcvdBuff + packet->sequenceNum, packet->payload, datalen);
 
-        dbg(TRANSPORT_CHANNEL, ">>> Received: [l=%u/%u @ s=%u]\n", datalen, packet->length, packet->sequenceNum);
+            dbg(TRANSPORT_CHANNEL, ">>> Received: [l=%u/%u @ s=%u]\n", datalen, packet->length, packet->sequenceNum);
 
-        for (i = 0; i < datalen; i++) {
-            dbg(TRANSPORT_CHANNEL, "- %u\n", packet->payload[i]);
+            for (i = 0; i < datalen; i++) {
+                dbg(TRANSPORT_CHANNEL, "- %u\n", packet->payload[i]);
+            }
+
         }
 
         ack.flags = ACK;

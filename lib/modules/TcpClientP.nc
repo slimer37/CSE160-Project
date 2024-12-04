@@ -42,14 +42,14 @@ implementation {
             return FAIL;
         }
 
-        call writeTimer.startOneShot(8000);
+        call writeTimer.startPeriodic(2000);
 
         return SUCCESS;
     }
 
     event void writeTimer.fired() {
         uint8_t buff[128];
-        uint16_t i;
+        uint8_t i;
 
         if (call Transport.checkSocketState(clientSocket) != ESTABLISHED) {
             dbg(TRANSPORT_CHANNEL, "Can't write now, not established\n");
@@ -57,10 +57,15 @@ implementation {
             return;
         }
 
+        if (progress >= transferMax) {
+            call writeTimer.stop();
+            return;
+        }
+
         dbg(TRANSPORT_CHANNEL, "\n");
         dbg(TRANSPORT_CHANNEL, "[CLIENT] Writing numbers to transfer:\n");
 
-        for (i = progress; i < transferMax && i < 64; i++) {
+        for (i = 0; i < transferMax && i < 64; i++) {
             buff[i * 2] = (i + 1) & 0xff;
             buff[i * 2 + 1] = ((i + 1) >> 8);
             dbg(TRANSPORT_CHANNEL, "- %u [= %u | %u]\n", *(uint16_t*)(buff + i * 2), buff[i * 2], buff[i * 2 + 1]);
@@ -68,6 +73,6 @@ implementation {
 
         dbg(TRANSPORT_CHANNEL, "\n", i);
         
-        call Transport.write(clientSocket, buff, i * 2);
+        progress += call Transport.write(clientSocket, buff, i * 2) / 2;
     }
 }

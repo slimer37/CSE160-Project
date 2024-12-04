@@ -72,10 +72,6 @@ implementation {
 
         if (numUnacked == 0) return;
 
-        resentPack = &unackedPacks[i];
-        resentPack->seq = sequenceNum++;
-        nextHop = call LinkStateRouting.getNextHop(resentPack->dest);
-
         retries[i]++;
 
         if (retries[i] > MAX_RETRIES) {
@@ -90,6 +86,10 @@ implementation {
 
             return;
         }
+
+        resentPack = &unackedPacks[i];
+        resentPack->seq = sequenceNum++;
+        nextHop = call LinkStateRouting.getNextHop(resentPack->dest);
 
         if (call SimpleSend.send(*resentPack, nextHop) == SUCCESS) {
             dbg(GENERAL_CHANNEL, "[An unacked message is being resent to %u]\n", resentPack->dest);
