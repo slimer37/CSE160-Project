@@ -12,8 +12,12 @@ class TestSim:
     # COMMAND TYPES
     CMD_PING = 0
     CMD_NEIGHBOR_DUMP = 1
+    CMD_LINKSTATE_DUMP = 2
     CMD_ROUTE_DUMP=3
+    CMD_TEST_CLIENT=4
+    CMD_TEST_SERVER=5
     CMD_FLOOD_SEND=10
+    CMD_CLOSE_SOCK=11
 
     # CHANNELS - see includes/channels.h
     COMMAND_CHANNEL="command";
@@ -125,9 +129,23 @@ class TestSim:
 
     def neighborDMP(self, destination):
         self.sendCMD(self.CMD_NEIGHBOR_DUMP, destination, "neighbor command");
+    
+    def linkStateDMP(self, destination):
+        self.sendCMD(self.CMD_LINKSTATE_DUMP, destination, "link state command");
 
     def routeDMP(self, destination):
         self.sendCMD(self.CMD_ROUTE_DUMP, destination, "routing command");
+    
+    def cmdTestServer(self, node, port):
+        self.sendCMD(self.CMD_TEST_SERVER, node, chr(port));
+    
+    def cmdTestClient(self, node, dest, srcPort, destPort, transfer):
+        high = chr(transfer >> 8)
+        low = chr(transfer & 0xFF)
+        self.sendCMD(self.CMD_TEST_CLIENT, node, "{0}{1}{2}{3}{4}".format(chr(srcPort), chr(dest), chr(destPort), high, low));
+    
+    def cmdClientClose(self, node, dest, srcPort, destPort):
+        self.sendCMD(self.CMD_CLOSE_SOCK, node, "{0}{1}{2}".format(chr(srcPort), chr(dest), chr(destPort)));
 
     def addChannel(self, channelName, out=sys.stdout):
         print 'Adding Channel', channelName;
@@ -137,16 +155,35 @@ def main():
     s = TestSim();
     s.runTime(10);
     s.loadTopo("example.topo");
-    s.loadNoise("no_noise.txt");
+    s.loadNoise("some_noise.txt");
     s.bootAll();
-    # s.addChannel(s.COMMAND_CHANNEL);
+    s.addChannel(s.COMMAND_CHANNEL);
     # s.addChannel(s.FLOODING_CHANNEL);
     # s.addChannel(s.NEIGHBOR_CHANNEL);
     s.addChannel(s.GENERAL_CHANNEL);
-    s.addChannel(s.ROUTING_CHANNEL);
+    # s.addChannel(s.ROUTING_CHANNEL);
+    s.addChannel(s.TRANSPORT_CHANNEL);
+
+    s.runTime(100);
+    # s.cmdTestClient(1, 1, 1, 1, 555);
+    s.cmdTestServer(9, 5);
+    s.runTime(200);
+    # s.routeDMP(9);
+    # s.runTime(100);
+    s.cmdTestClient(3, 9, 1, 5, 60);
+    s.runTime(1000);
+    s.cmdClientClose(3, 9, 1, 5);
+    # s.cmdTestClient(5, 9, 1, 5, 5);
+    # s.runTime(100);
+    # s.runTime(100);
+    # s.routeDMP(2);
+    # s.runTime(100);
+    # s.routeDMP(1);
+    s.runTime(5000);
+    return
 
     s.runTime(1000);
-    s.routeDMP(1);
+    s.linkStateDMP(1);
     s.runTime(10);
     s.ping(1, 9, "Hello, World");
     s.runTime(1000);

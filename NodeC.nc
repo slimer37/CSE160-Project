@@ -41,4 +41,12 @@ implementation
 
     Node.LinkStateRouting -> LinkStateRoutingC;
     Node.RoutedSend -> RoutedSendC;
+
+    components TcpServerC;
+    Node.TcpServer -> TcpServerC;
+    components TcpClientC;
+    Node.TcpClient -> TcpClientC;
+
+    components TransportC;
+    Node.Transport -> TransportC;
 }

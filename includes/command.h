@@ -19,6 +19,7 @@ enum{
 	CMD_KILL=6,
 	CMD_ERROR=9,
 	CMD_FLOOD_SEND=10,
+	CMD_CLOSE_SOCK=11,
 };
 
 enum{

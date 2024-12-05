@@ -13,11 +13,12 @@ module NeighborDiscoveryP {
 
 implementation {
     uint8_t neighborQualityTable[NEIGHBOR_TABLE_LENGTH];
+    uint8_t distanceVectorTable[NEIGHBOR_TABLE_LENGTH];
     NeighborStats neighborStats[NEIGHBOR_TABLE_LENGTH];
     uint16_t seq = 0;
 
-    command uint8_t* NeighborDiscovery.retrieveLinkState() {
-        return neighborQualityTable;
+    command uint8_t* NeighborDiscovery.retrieveDistanceVectors() {
+        return distanceVectorTable;
     }
 
     command void NeighborDiscovery.startDiscovery() {
@@ -27,59 +28,49 @@ implementation {
         call discoveryTimer.startPeriodic(REDISCOVERY_PERIOD);
         dbg(NEIGHBOR_CHANNEL, "Neighbor discovery started\n");
 
+        // Initialize neighbor statistics
         for (id = 0; id < NEIGHBOR_TABLE_LENGTH; id++) {
-            for (i = 0; i < ND_MOVING_AVERAGE_N; i++) {
-                neighborStats[id].responseSamples[i] = FALSE;
-            }
-
             neighborQualityTable[id] = 0;
             neighborStats[id].linkLifetime = 0;
             neighborStats[id].recentlyReplied = FALSE;
         }
     }
+
+    #define EWMA_ALPHA 0.3
     
-    void recalculateLinkStatistics() {
+    // Calculates EWMA and resets/decrements statistics for next round of discovery
+    void advanceLinkStats() {
         uint16_t id;
-        uint8_t i;
-        uint8_t sum;
 
         for (id = 0; id < NEIGHBOR_TABLE_LENGTH; id++) {
-            for (i = ND_MOVING_AVERAGE_N - 1; i > 0; i--) {
-                neighborStats[id].responseSamples[i] = neighborStats[id].responseSamples[i - 1];
-            }
-
-            neighborStats[id].responseSamples[0] = neighborStats[id].recentlyReplied;
+            // EWMA
+            neighborQualityTable[id] = EWMA_ALPHA * neighborStats[id].recentlyReplied * 100 + (1 - EWMA_ALPHA) * neighborQualityTable[id];
             
+            // Calculate cost of node as inverse of link quality
+            distanceVectorTable[id] = 101 - neighborQualityTable[id];
+
+            // Reset flag
             neighborStats[id].recentlyReplied = FALSE;
 
-            sum = 0;
+            // Decrement link lifetimes
+        
+            if (neighborStats[id].linkLifetime > 0) {
+                
+                neighborStats[id].linkLifetime--;
 
-            for (i = 0; i < ND_MOVING_AVERAGE_N; i++) {
-                if (neighborStats[id].responseSamples[i]) {
-                    sum++;
+                // Signal lost neighbor if the lifetime became zero
+
+                if (neighborStats[id].linkLifetime == 0) {
+                    signal NeighborDiscovery.neighborLost(id);
                 }
             }
-
-            if (sum == 0) {
-                signal NeighborDiscovery.neighborLost(id);
-            }
-
-            neighborQualityTable[id] = sum * 100 / ND_MOVING_AVERAGE_N;
         }
     }
 
     void sendDiscoveryPackets() {
         pack msgPayload;
 
-        uint16_t id;
-
-        recalculateLinkStatistics();
-
-        for (id = 0; id < NEIGHBOR_TABLE_LENGTH; id++) {
-            if (neighborStats[id].linkLifetime == 0) continue;
-
-            neighborStats[id].linkLifetime--;
-        }
+        advanceLinkStats();
 
         // Prepare the discovery packet
         msgPayload.src = TOS_NODE_ID;
@@ -128,11 +119,39 @@ implementation {
         for (id = 0; id < NEIGHBOR_TABLE_LENGTH; id++) {
             // Positive lifetime means active link
             if (neighborStats[id].linkLifetime > 0) {
-                dbg(GENERAL_CHANNEL, "- Node %u : %u%% | %u\n", id, neighborQualityTable[id], neighborStats[id].linkLifetime);
+                dbg(GENERAL_CHANNEL, "- Node %u\n", id);
             }
         }
 
         dbg(GENERAL_CHANNEL, "-- End of neighbors --\n");
+    }
+
+    command void NeighborDiscovery.printLinkState() {
+        uint16_t id;
+
+        dbg(GENERAL_CHANNEL, "Link State of node %u:\n", TOS_NODE_ID);
+
+        // Find active links
+        for (id = 0; id < NEIGHBOR_TABLE_LENGTH; id++) {
+            // Positive lifetime means active link
+            if (neighborStats[id].linkLifetime > 0) {
+                dbg(GENERAL_CHANNEL, "Node %u : %u%% | %u\n", id, neighborQualityTable[id], neighborStats[id].linkLifetime);
+            }
+        }
+
+        dbg(GENERAL_CHANNEL, "-- End of link state --\n");
+    }
+
+    command void NeighborDiscovery.printDistanceVector() {
+        uint16_t id;
+
+        dbg(GENERAL_CHANNEL, "Distance vector of node %u:\n", TOS_NODE_ID);
+
+        for (id = 0; id < NEIGHBOR_TABLE_LENGTH; id++) {
+            dbg(GENERAL_CHANNEL, "%u => %u\n", id, distanceVectorTable[id]);
+        }
+
+        dbg(GENERAL_CHANNEL, "-- End of DV --\n");
     }
     
     event message_t* Receive.receive(message_t* msg, void* payload, uint8_t len) {

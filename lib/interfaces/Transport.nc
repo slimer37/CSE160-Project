@@ -1,5 +1,6 @@
-#include "../../packet.h"
+#include "../../includes/packet.h"
 #include "../../includes/socket.h"
+#include "../../includes/tcp_packet.h"
 
 /**
  * The Transport interface handles sockets and is a layer of abstraction
@@ -144,4 +145,9 @@ interface Transport{
     *   to listen else FAIL.
     */
    command error_t listen(socket_t fd);
+
+   // Finds a socket matching port src and address dest (0/0 for server)
+   command socket_t findSocket(socket_port_t src, socket_addr_t dest);
+
+   command enum socket_state checkSocketState(socket_t fd);
 }

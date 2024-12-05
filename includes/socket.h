@@ -9,13 +9,44 @@ enum{
 };
 
 enum socket_state{
-    CLOSED,
-    LISTEN,
-    ESTABLISHED,
-    SYN_SENT,
-    SYN_RCVD,
+    CLOSED = 1,
+    LISTEN = 2,
+    ESTABLISHED = 3,
+    SYN_SENT = 4,
+    SYN_RCVD = 5,
+    FIN_WAIT_1 = 6,
+    FIN_WAIT_2 = 7,
+    CLOSE_WAIT = 8,
+    LAST_ACK = 9,
+    CLOSING = 10
 };
 
+// helper func by Alfred
+const char* getStateAsString(uint8_t state) {
+
+    const char* stateLabels[] = {
+        "CLOSED",
+        "LISTEN",
+        "ESTABLISHED",
+        "SYN_SENT",
+        "SYN_RCVD",
+        "FIN_WAIT_1",
+        "FIN_WAIT_2",
+        "CLOSE_WAIT",
+        "LAST_ACK",
+        "CLOSING"
+    };
+
+    if (state == 0) {
+        return "NULL";
+    }
+
+    if (state > 10) {
+        return "UNKNOWN";
+    }
+    
+    return stateLabels[state - 1];
+}
 
 typedef nx_uint8_t nx_socket_port_t;
 typedef uint8_t socket_port_t;

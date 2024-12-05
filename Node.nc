@@ -29,6 +29,11 @@ module Node
     uses interface NeighborDiscovery;
 
     uses interface CommandHandler;
+
+    uses interface TcpServer;
+    uses interface TcpClient;
+
+    uses interface Transport;
 }
 
 implementation 
@@ -71,6 +76,7 @@ implementation
         {
             pack* myMsg = (pack*) payload;
             dbg(GENERAL_CHANNEL, "Package Payload: %s\n", myMsg->payload);
+
             return msg;
         }
         dbg(GENERAL_CHANNEL, "Unknown Packet Type %d\n", len);
@@ -82,9 +88,11 @@ implementation
         dbg(FLOODING_CHANNEL, "Flooding packet received from %u with payload: %s\n", src, payload);
     }
 
-    event void RoutedSend.received(uint16_t src, uint8_t *payload, uint8_t len) 
+    event void RoutedSend.received(uint16_t src, pack *package, uint8_t len) 
     {
-        dbg(GENERAL_CHANNEL, "Packet received via LSR from %u with payload: %s\n", src, payload);
+        if (package->protocol != PROTOCOL_PING) return;
+        
+        dbg(GENERAL_CHANNEL, "Packet received via LSR from %u with payload: %s\n", src, package->payload);
     }
 
     event void NeighborDiscovery.neighborDiscovered(uint16_t neighborAddr) 
@@ -108,7 +116,7 @@ implementation
         //     dbg(GENERAL_CHANNEL, "Failed to send ping, error %d\n", result);
         // }
 
-        call RoutedSend.send(destination, payload, PACKET_MAX_PAYLOAD_SIZE);
+        call RoutedSend.send(destination, payload, PACKET_MAX_PAYLOAD_SIZE, PROTOCOL_PING);
     }
 
     event void CommandHandler.flood(uint16_t destination, uint8_t *payload)
@@ -125,10 +133,34 @@ implementation
         call LinkStateRouting.printRoutingTable();
     }
 
-    event void CommandHandler.printLinkState() {}
-    event void CommandHandler.printDistanceVector() {}
-    event void CommandHandler.setTestServer() {}
-    event void CommandHandler.setTestClient() {}
+    event void CommandHandler.printLinkState() {
+        call NeighborDiscovery.printLinkState();
+    }
+
+    event void CommandHandler.printDistanceVector() {
+        call NeighborDiscovery.printDistanceVector();
+    }
+
+    event void CommandHandler.setTestServer(uint8_t port) {
+        call TcpServer.startServer(port);
+    }
+
+    event void CommandHandler.setTestClient(uint8_t srcPort, uint8_t dest, uint8_t destPort, uint16_t transfer) {
+        call TcpClient.startClient(srcPort, dest, destPort, transfer);
+        dbg(GENERAL_CHANNEL, "Transfer: %u\n", transfer);
+    }
+
+    event void CommandHandler.closeSocket(uint8_t srcPort, uint8_t dest, uint8_t destPort) {
+        socket_addr_t addr;
+        socket_t fd;
+
+        addr.addr = dest;
+        addr.port = destPort;
+
+        fd = call Transport.findSocket(srcPort, addr);
+        call Transport.close(fd);
+    }
+
     event void CommandHandler.setAppServer() {}
     event void CommandHandler.setAppClient() {}
 
