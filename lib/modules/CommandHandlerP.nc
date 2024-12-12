@@ -70,7 +70,7 @@ implementation{
 
             case CMD_TEST_CLIENT:
                 dbg(COMMAND_CHANNEL, "Command Type: Client\n");
-                signal CommandHandler.setTestClient(buff[0], buff[1], buff[2], ((uint16_t)buff[3] << 8) + buff[4]);
+                signal CommandHandler.setTestClient(buff[0], buff[1], buff[2], &buff[3]);
                 break;
 
             case CMD_CLOSE_SOCK:

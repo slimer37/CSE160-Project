@@ -145,9 +145,9 @@ implementation
         call TcpServer.startServer(port);
     }
 
-    event void CommandHandler.setTestClient(uint8_t srcPort, uint8_t dest, uint8_t destPort, uint16_t transfer) {
-        call TcpClient.startClient(srcPort, dest, destPort, transfer);
-        dbg(GENERAL_CHANNEL, "Transfer: %u\n", transfer);
+    event void CommandHandler.setTestClient(uint8_t srcPort, uint8_t dest, uint8_t destPort, uint8_t* username) {
+        dbg(GENERAL_CHANNEL, "Joinig with username: %s\n", username);
+        call TcpClient.startClient(srcPort, dest, destPort, username);
     }
 
     event void CommandHandler.closeSocket(uint8_t srcPort, uint8_t dest, uint8_t destPort) {

@@ -10,12 +10,14 @@ implementation {
     socket_t clientSocket;
     socket_addr_t serverAddress;
     socket_port_t port;
-    uint8_t username[16];
+    uint8_t clientUsername[16];
 
-    command error_t TcpClient.startClient(uint8_t srcPort, uint16_t dest, uint8_t destPort, uint16_t transfer) {
+    command error_t TcpClient.startClient(uint8_t srcPort, uint16_t dest, uint8_t destPort, uint8_t* username) {
         socket_addr_t socketAddress;
 
         clientSocket = call Transport.socket();
+
+        strcpy(clientUsername, username);
 
         port = srcPort;
 
@@ -55,7 +57,7 @@ implementation {
         else {
             uint8_t msg[32];
             
-            sprintf(msg, "hello %s %u\r\n", username, port);
+            sprintf(msg, "hello %s %u\r\n", clientUsername, port);
             
             call Transport.write(clientSocket, msg, strlen(msg));
 

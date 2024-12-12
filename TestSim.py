@@ -139,10 +139,8 @@ class TestSim:
     def cmdTestServer(self, node, port):
         self.sendCMD(self.CMD_TEST_SERVER, node, chr(port));
     
-    def cmdTestClient(self, node, dest, srcPort, destPort, transfer):
-        high = chr(transfer >> 8)
-        low = chr(transfer & 0xFF)
-        self.sendCMD(self.CMD_TEST_CLIENT, node, "{0}{1}{2}{3}{4}".format(chr(srcPort), chr(dest), chr(destPort), high, low));
+    def cmdTestClient(self, node, dest, srcPort, destPort, username):
+        self.sendCMD(self.CMD_TEST_CLIENT, node, "{0}{1}{2}{3}".format(chr(srcPort), chr(dest), chr(destPort), username));
     
     def cmdClientClose(self, node, dest, srcPort, destPort):
         self.sendCMD(self.CMD_CLOSE_SOCK, node, "{0}{1}{2}".format(chr(srcPort), chr(dest), chr(destPort)));
