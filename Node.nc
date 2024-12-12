@@ -34,6 +34,9 @@ module Node
     uses interface TcpClient;
 
     uses interface Transport;
+
+    // uses interface ChatAppServer;
+    uses interface ChatAppClient;
 }
 
 implementation 

@@ -49,4 +49,9 @@ implementation
 
     components TransportC;
     Node.Transport -> TransportC;
+
+    // components ChatAppServerC;
+    // Node.ChatAppServer -> ChatAppServerC;
+    components ChatAppClientC;
+    Node.ChatAppClient -> ChatAppClientC;
 }
