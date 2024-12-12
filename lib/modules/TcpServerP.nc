@@ -81,18 +81,14 @@ implementation {
                     continue;
                 }
 
-                dbg(GENERAL_CHANNEL, "\n");
-                dbg(GENERAL_CHANNEL, "[SERVER APPLICATION]\n");
-                dbg(GENERAL_CHANNEL, "Read %u bytes from client into %u\n", readNum, lastRead);
-                dbg(GENERAL_CHANNEL, ">>> \"%s\"\n", buff);
-
-                for (j = 0; j < sizeof(buff); j++) {
-                    dbg(GENERAL_CHANNEL, ">>> \"%c\"\n", buff[j]);
-                }
+                dbg(TRANSPORT_CHANNEL, "\n");
+                dbg(TRANSPORT_CHANNEL, "[SERVER APPLICATION]\n");
+                dbg(TRANSPORT_CHANNEL, "Read %u bytes from client into %u\n", readNum, lastRead);
+                dbg(TRANSPORT_CHANNEL, ">>> \"%s\"\n", buff);
 
                 for (j = lastRead; j < lastRead + readNum; j++) {
                     if (buff[j] == '\0') {
-                        dbg(GENERAL_CHANNEL, ">>> [Whole message processed, buffer emptied]\n");
+                        dbg(TRANSPORT_CHANNEL, ">>> [Whole message processed, buffer emptied]\n");
                         empty = TRUE;
                         break;
                     }
@@ -104,7 +100,7 @@ implementation {
 
                 if (j < lastRead) {
                     memmove(buff, buff + j + 1, sizeof(buff) - lastRead);
-                    dbg(GENERAL_CHANNEL, ">>> %u into %u, %u bytes Now: \"%s\"\n", j + 1, 0, sizeof(buff) - lastRead, buff);
+                    dbg(TRANSPORT_CHANNEL, ">>> %u into %u, %u bytes Now: \"%s\"\n", j + 1, 0, sizeof(buff) - lastRead, buff);
                     lastRead -= j + 1;
                 }
             }

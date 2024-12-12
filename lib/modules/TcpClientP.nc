@@ -9,11 +9,15 @@ module TcpClientP {
 implementation {
     socket_t clientSocket;
     socket_addr_t serverAddress;
+    socket_port_t port;
+    uint8_t username[16];
 
     command error_t TcpClient.startClient(uint8_t srcPort, uint16_t dest, uint8_t destPort, uint16_t transfer) {
         socket_addr_t socketAddress;
 
         clientSocket = call Transport.socket();
+
+        port = srcPort;
 
         socketAddress.port = srcPort;
         socketAddress.addr = TOS_NODE_ID;
@@ -48,10 +52,15 @@ implementation {
             // call Transport.connect(clientSocket, &serverAddress);
             return;
         }
+        else {
+            uint8_t msg[32];
+            
+            sprintf(msg, "hello %s %u\r\n", username, port);
+            
+            call Transport.write(clientSocket, msg, strlen(msg));
 
-        dbg(TRANSPORT_CHANNEL, "\n");
-        dbg(TRANSPORT_CHANNEL, "[CLIENT] Writing characters to transfer:\n");
-        
-        call Transport.write(clientSocket, "Hello world!\0Hello again!", 26);
+            dbg(TRANSPORT_CHANNEL, "\n");
+            dbg(TRANSPORT_CHANNEL, "[CLIENT] Writing characters to transfer: %s\n", msg);
+        }   
     }
 }
