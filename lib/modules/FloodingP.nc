@@ -115,7 +115,7 @@ implementation {
                     // Send ACK back to source
                     sendAck(receivedPkt->src, receivedPkt->seq);
 
-                    signal Flooding.receivedFlooding(receivedPkt->src, receivedPkt->payload, len - PACKET_HEADER_LENGTH);
+                    signal Flooding.receivedFlooding(receivedPkt->src, (uint8_t*)receivedPkt->payload, len - PACKET_HEADER_LENGTH);
                 }
 
                 return msg;
@@ -123,7 +123,7 @@ implementation {
 
             // Support total intentional flooding through AM_BROADCAST_ADDR
             else if (receivedPkt->dest == AM_BROADCAST_ADDR) {
-                signal Flooding.receivedFlooding(receivedPkt->src, receivedPkt->payload, len - PACKET_HEADER_LENGTH);
+                signal Flooding.receivedFlooding(receivedPkt->src, (uint8_t*)receivedPkt->payload, len - PACKET_HEADER_LENGTH);
             }
 
             // Rebroadcast if TTL > 0
