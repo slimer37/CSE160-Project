@@ -168,7 +168,7 @@ def main():
     s.runTime(200);
     # s.routeDMP(9);
     # s.runTime(100);
-    s.cmdTestClient(3, 9, 1, 5, 60);
+    s.cmdTestClient(3, 9, 1, 5, "alfred");
     s.runTime(1000);
     s.cmdClientClose(3, 9, 1, 5);
     # s.cmdTestClient(5, 9, 1, 5, 5);
