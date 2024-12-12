@@ -42,19 +42,19 @@ implementation{
 	}
 
 	// Added by me
-	command void List.set(uint16_t index, t newValue){
-		container[index] = newValue;
+	command void List.set(uint16_t position, t newValue){
+		container[position] = newValue;
 	}
 
 	// Added by me
-	command t List.pop(uint16_t index){
+	command t List.pop(uint16_t position){
 		t returnVal;
 		uint16_t i;
 
-		returnVal = container[index];
+		returnVal = container[position];
 
 		if (size > 0) {
-			for (i = index; i < size - 1; i++) {
+			for (i = position; i < size - 1; i++) {
 				container[i] = container[i+1];
 			}
 
