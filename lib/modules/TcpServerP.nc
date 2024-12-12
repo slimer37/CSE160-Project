@@ -13,7 +13,7 @@ implementation {
     socket_t clientSockets[MAX_CONNECTIONS];
     uint8_t numConnections;
 
-    uint8_t buff[64];
+    uint8_t buff[128];
     uint8_t lastRead;
 
     command error_t TcpServer.startServer(socket_port_t port) {
@@ -49,7 +49,7 @@ implementation {
     }
 
     event void acceptConnectionTimer.fired() {
-        uint8_t i;
+        uint8_t i, j;
         socket_t socket = call Transport.accept(serverSocket);
 
         if (socket) {
@@ -62,7 +62,6 @@ implementation {
             socket_t client = clientSockets[i];
 
             if (call Transport.checkSocketState(client) == CLOSED) {
-                uint8_t j;
 
                 dbg(TRANSPORT_CHANNEL, "Lost client.\n");
 
@@ -74,39 +73,39 @@ implementation {
                 continue;
             } else {
                 uint8_t readNum;
-                char str[256] = "";
-
-                readNum = call Transport.read(client, buff + lastRead, 64 - lastRead);
+                bool empty;
+                
+                readNum = call Transport.read(client, buff + lastRead, sizeof(buff) - lastRead);
 
                 if (readNum == 0) {
                     continue;
                 }
 
-                for (i = 0; i < lastRead + readNum - 1; i += 2) {
-                    char repr[5];
-
-                    uint16_t value = *(uint16_t*)(buff + i);
-
-                    sprintf(repr, "%u", value);
-
-                    strcat(str, repr);
-
-                    if (i < readNum - 2) {
-                        strcat(str, ", ");
-                    }
-                }
-
                 dbg(GENERAL_CHANNEL, "\n");
                 dbg(GENERAL_CHANNEL, "[SERVER APPLICATION]\n");
                 dbg(GENERAL_CHANNEL, "Read %u bytes from client into %u\n", readNum, lastRead);
-                dbg(GENERAL_CHANNEL, ">>> %s\n", str);
+                dbg(GENERAL_CHANNEL, ">>> \"%s\"\n", buff);
 
-                if ((lastRead + readNum) % 2 == 0) {
-                    lastRead = 0;
-                } else {
-                    buff[0] = buff[lastRead + readNum - 1];
-                    lastRead = 1;
-                    dbg(GENERAL_CHANNEL, "leftover byte: %u\n", buff[0]);
+                for (j = 0; j < sizeof(buff); j++) {
+                    dbg(GENERAL_CHANNEL, ">>> \"%c\"\n", buff[j]);
+                }
+
+                for (j = lastRead; j < lastRead + readNum; j++) {
+                    if (buff[j] == '\0') {
+                        dbg(GENERAL_CHANNEL, ">>> [Whole message processed, buffer emptied]\n");
+                        empty = TRUE;
+                        break;
+                    }
+                }
+
+                lastRead += readNum;
+
+                if (!empty) continue;
+
+                if (j < lastRead) {
+                    memmove(buff, buff + j + 1, sizeof(buff) - lastRead);
+                    dbg(GENERAL_CHANNEL, ">>> %u into %u, %u bytes Now: \"%s\"\n", j + 1, 0, sizeof(buff) - lastRead, buff);
+                    lastRead -= j + 1;
                 }
             }
         }
