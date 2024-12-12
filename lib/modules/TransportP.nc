@@ -104,7 +104,7 @@ implementation {
         if (clientSocket)
         {
             tcp_pack ackPack;
-            socket_t fd = id + 1;
+            fd = id + 1;
 
             // form packet
 
@@ -121,7 +121,7 @@ implementation {
             return fd;
         }
         else {
-            return NULL;
+            return (socket_t)NULL;
         }
     }
 
