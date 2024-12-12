@@ -86,8 +86,9 @@ implementation {
                 dbg(TRANSPORT_CHANNEL, "Read %u bytes from client into %u\n", readNum, lastRead);
                 dbg(TRANSPORT_CHANNEL, ">>> \"%s\"\n", buff);
 
-                for (j = lastRead; j < lastRead + readNum; j++) {
-                    if (buff[j] == '\0') {
+                for (j = lastRead; j < lastRead + readNum - 1; j++) {
+                    // Check for message termination with \r\n
+                    if (buff[j] == '\r' && buff[j + 1] == '\n') {
                         dbg(TRANSPORT_CHANNEL, ">>> [Whole message processed, buffer emptied]\n");
                         empty = TRUE;
                         break;
