@@ -13,6 +13,7 @@ module RoutedSendP {
 #define DISABLE_ACKS FALSE
 #define MAX_RETRIES 10
 #define MAX_UNACKED 10
+#define RESEND_PERIOD 1000
 
 implementation {
     pack packet;
@@ -61,7 +62,7 @@ implementation {
         if (DISABLE_ACKS) return;
 
         if (!call resendTimer.isRunning()) {
-            call resendTimer.startPeriodic(1000);
+            call resendTimer.startPeriodic(RESEND_PERIOD);
         }
     }
 
