@@ -21,7 +21,7 @@ implementation {
 
         sprintf(msg, "hello %s %u\r\n", clientUsername, port);
 
-        call TcpClient.write(msg);
+        call TcpClient.writeString(msg);
 
         dbg(CHAT_CHANNEL, "Joined the room.\n");
     }

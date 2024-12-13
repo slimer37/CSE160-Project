@@ -45,7 +45,7 @@ implementation {
         return SUCCESS;
     }
 
-    command uint8_t TcpClient.write(uint8_t* string) {
+    command uint8_t TcpClient.writeString(uint8_t* string) {
         uint8_t writtenLength;
         uint8_t len = strlen(string);
 

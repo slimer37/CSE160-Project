@@ -5,5 +5,5 @@ interface TcpClient {
     event void ready();
 
     // Use null-terminated string!
-    command uint8_t write(uint8_t* string);
+    command uint8_t writeString(uint8_t* string);
 }
