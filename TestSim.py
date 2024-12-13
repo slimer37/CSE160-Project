@@ -33,6 +33,9 @@ class TestSim:
     # Project 3
     TRANSPORT_CHANNEL="transport";
 
+    # Project 4
+    CHAT_CHANNEL="chat";
+
     # Personal Debuggin Channels for some of the additional models implemented.
     HASHMAP_CHANNEL="hashmap";
 
@@ -160,7 +163,8 @@ def main():
     # s.addChannel(s.NEIGHBOR_CHANNEL);
     s.addChannel(s.GENERAL_CHANNEL);
     # s.addChannel(s.ROUTING_CHANNEL);
-    s.addChannel(s.TRANSPORT_CHANNEL);
+    # s.addChannel(s.TRANSPORT_CHANNEL);
+    s.addChannel(s.CHAT_CHANNEL);
 
     s.runTime(100);
     # s.cmdTestClient(1, 1, 1, 1, 555);
