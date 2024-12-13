@@ -6,4 +6,8 @@ interface TcpClient {
 
     // Use null-terminated string!
     command uint8_t writeString(uint8_t* string);
+
+    event void processMessage(socket_t sourceSocket, uint8_t* messageString);
+
+    command uint8_t write(uint8_t* buff, uint8_t len);
 }

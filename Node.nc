@@ -150,6 +150,11 @@ implementation
         call ChatAppClient.join(srcPort, dest, destPort, username);
     }
 
+    event void CommandHandler.sendChatCommand(uint8_t* com) {
+        dbg(CHAT_CHANNEL, "Sending: %s\n", com);
+        call ChatAppClient.sendCommand(com);
+    }
+
     event void CommandHandler.closeSocket(uint8_t srcPort, uint8_t dest, uint8_t destPort) {
         socket_addr_t addr;
         socket_t fd;
