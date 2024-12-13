@@ -93,7 +93,7 @@ implementation {
         nextHop = call LinkStateRouting.getNextHop(resentPack->dest);
 
         if (call SimpleSend.send(*resentPack, nextHop) == SUCCESS) {
-            dbg(GENERAL_CHANNEL, "[An unacked message is being resent to %u]\n", resentPack->dest);
+            dbg(ROUTING_CHANNEL, "[An unacked message is being resent to %u]\n", resentPack->dest);
             dbg(ROUTING_CHANNEL, "(Unacked repeat [%u]) Routing \"%s\" from %u to %u through %u\n", numUnacked, resentPack->payload, TOS_NODE_ID, resentPack->dest, nextHop);
         } else {
             dbg(ROUTING_CHANNEL, "Failed to resend\n");
