@@ -36,10 +36,14 @@ implementation {
             return;
         }
 
+        dbg(CHAT_CHANNEL, "\n");
+
         if (strncmp(messageString, "whisper", 7) == 0) {
-            dbg(CHAT_CHANNEL, "%s whispers to you: %s\n", name, message);
+            dbg(CHAT_CHANNEL, "    %s whispers to you: %s\n", name, message);
         } else {
-            dbg(CHAT_CHANNEL, "<%s> %s\n", name, message);
+            dbg(CHAT_CHANNEL, "    <%s> %s\n", name, message);
         }
+
+        dbg(CHAT_CHANNEL, "\n");
     }
 }
