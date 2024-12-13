@@ -26,29 +26,43 @@ implementation {
         return FALSE;
     }
 
-    event void TcpServer.disconnected(socket_t clientSocket) {
+    bool findUserBySocket(socket_t match, chatroom_user* outUser) {
         uint8_t i;
 
         for (i = 0; i < call users.size(); i++) {
             chatroom_user user = call users.get(i);
-            if (user.socket == clientSocket) {
-                call users.pop(i);
 
-                dbg(CHAT_CHANNEL, "[%s] disconnected. (%u/%u)\n",
-                    user.name,
-                    call users.size(), MAX_ROOM_SIZE);
-
-                break;
+            if (user.socket == match) {
+                *outUser = user;
+                return TRUE;
             }
         }
+
+        return FALSE;
+    }
+
+    event void TcpServer.disconnected(socket_t clientSocket) {
+        uint8_t i;
+
+        chatroom_user user;
+
+        if (!findUserBySocket(clientSocket, &user)) {
+            dbg(CHAT_CHANNEL, "Unknown user disconnected.\n");
+            return;
+        }
+
+        dbg(CHAT_CHANNEL, "[%s] disconnected. (%u/%u)\n",
+            user.name,
+            call users.size(), MAX_ROOM_SIZE);
     }
 
     event void TcpServer.processMessage(socket_t clientSocket, uint8_t* messageString) {
+        chatroom_user user;
+
         dbg(CHAT_CHANNEL, "Processing: \"%s\"\n", messageString);
 
         // If "hello"...
         if (strncmp(messageString, "hello", 5) == 0) {
-            chatroom_user user;
             uint8_t i;
             uint8_t name[USERNAME_LIMIT];
 
@@ -69,6 +83,17 @@ implementation {
         }
 
         else if (strncmp(messageString, "msg", 3) == 0) {
+            uint8_t message[32];
+
+            findUserBySocket(clientSocket, &user);
+
+            if (sscanf(messageString, "msg %s", message) < 1) {
+                dbg(CHAT_CHANNEL, "Invalid 'msg'.\n");
+                return;
+            }
+
+            sprintf(messageString, "msg %s %s", user.name, message);
+
             dbg(CHAT_CHANNEL, "Broadcasting \"%s\"\n", messageString);
             call TcpServer.writeBroadcast(messageString, strlen(messageString));
             call TcpServer.writeBroadcast("\r\n", 2);
