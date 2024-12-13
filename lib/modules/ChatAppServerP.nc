@@ -69,6 +69,7 @@ implementation {
         }
 
         else if (strncmp(messageString, "msg", 3) == 0) {
+            dbg(CHAT_CHANNEL, "Broadcasting \"%s\"\n", messageString);
             call TcpServer.writeBroadcast(messageString, strlen(messageString));
             call TcpServer.writeBroadcast("\r\n", 2);
         }
@@ -82,7 +83,13 @@ implementation {
                 return;
             }
 
-            findUserByName(name, &user);
+            if (!findUserByName(name, &user)) {
+                dbg(CHAT_CHANNEL, "No user \"%s\" was found.", name);
+                return;
+            }
+
+            dbg(CHAT_CHANNEL, "Unicasting \"%s\" to \"%s\"\n", messageString, name);
+
             call TcpServer.writeUnicast(user.socket, messageString, strlen(messageString));
             call TcpServer.writeUnicast(user.socket, "\r\n", 2);
         }
