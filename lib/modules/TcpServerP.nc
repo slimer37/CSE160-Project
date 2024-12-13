@@ -89,7 +89,13 @@ implementation {
                 for (j = lastRead; j < lastRead + readNum - 1; j++) {
                     // Check for message termination with \r\n
                     if (buff[j] == '\r' && buff[j + 1] == '\n') {
-                        dbg(TRANSPORT_CHANNEL, ">>> [Whole message processed, buffer emptied]\n");
+
+                        // null-terminate the completed message by replacing \r
+                        // and process it directly from the buffer
+                        buff[j] = '\0';
+                        dbg(TRANSPORT_CHANNEL, ">>> Full message: %s\n", buff);
+                        signal TcpServer.processMessage(buff);
+
                         empty = TRUE;
                         break;
                     }
