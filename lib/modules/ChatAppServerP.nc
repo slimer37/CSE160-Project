@@ -101,22 +101,27 @@ implementation {
 
         else if (strncmp(messageString, "whisper", 7) == 0) {
             uint8_t name[USERNAME_LIMIT];
-            chatroom_user user;
+            uint8_t message[32];
+            chatroom_user targetUser;
 
-            if (sscanf(messageString, "whisper %s %*s", name) < 1) {
+            if (sscanf(messageString, "whisper %s %s", name, message) < 1) {
                 dbg(CHAT_CHANNEL, "Invalid 'whisper'.\n");
                 return;
             }
 
-            if (!findUserByName(name, &user)) {
-                dbg(CHAT_CHANNEL, "No user \"%s\" was found.", name);
+            if (!findUserByName(name, &targetUser)) {
+                dbg(CHAT_CHANNEL, "No user \"%s\" was found.\n", name);
                 return;
             }
 
+            findUserBySocket(clientSocket, &user);
+
+            sprintf(messageString, "whisper %s %s", user.name, message);
+
             dbg(CHAT_CHANNEL, "Unicasting \"%s\" to \"%s\"\n", messageString, name);
 
-            call TcpServer.writeUnicast(user.socket, messageString, strlen(messageString));
-            call TcpServer.writeUnicast(user.socket, "\r\n", 2);
+            call TcpServer.writeUnicast(targetUser.socket, messageString, strlen(messageString));
+            call TcpServer.writeUnicast(targetUser.socket, "\r\n", 2);
         }
     }
 }
