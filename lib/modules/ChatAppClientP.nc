@@ -5,10 +5,14 @@ module ChatAppClientP {
 }
 
 implementation {
-    uint8_t clientUsername[16];
+    uint8_t clientUsername[USERNAME_LIMIT];
 
     command error_t ChatAppClient.join(uint8_t srcPort, uint16_t dest, uint8_t destPort, uint8_t* username) {
-        strcpy(clientUsername, username);
+        strncpy(clientUsername, username, USERNAME_LIMIT);
+
+        if (strlen(username) > USERNAME_LIMIT) {
+            dbg(CHAT_CHANNEL, "Username \"%s\" is too long; trimmed to \"%s\".", username, clientUsername);
+        }
 
         call TcpClient.startClient(srcPort, dest, destPort);
     }
