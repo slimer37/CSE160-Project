@@ -60,10 +60,13 @@ implementation {
 
         for (i = 0; i < numConnections; i++) {
             socket_t client = clientSockets[i];
+            enum socket_state state = call Transport.checkSocketState(client);
 
-            if (call Transport.checkSocketState(client) == CLOSED) {
+            if (state == CLOSED || state >= 6) {
 
                 dbg(TRANSPORT_CHANNEL, "Lost client.\n");
+
+                signal TcpServer.disconnected(client);
 
                 for (j = i; j < numConnections; j++) {
                     clientSockets[j] = clientSockets[j + 1];

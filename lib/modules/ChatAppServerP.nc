@@ -11,6 +11,23 @@ implementation {
         call TcpServer.startServer(port);
     }
 
+    event void TcpServer.disconnected(socket_t clientSocket) {
+        uint8_t i;
+
+        for (i = 0; i < call users.size(); i++) {
+            chatroom_user user = call users.get(i);
+            if (user.socket == clientSocket) {
+                call users.pop(i);
+
+                dbg(CHAT_CHANNEL, "[%s] disconnected. (%u/%u)\n",
+                    user.name,
+                    call users.size(), MAX_ROOM_SIZE);
+
+                break;
+            }
+        }
+    }
+
     event void TcpServer.processMessage(socket_t clientSocket, uint8_t* messageString) {
         dbg(CHAT_CHANNEL, "Processing: \"%s\"\n", messageString);
 
