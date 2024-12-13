@@ -2,6 +2,8 @@ module ChatAppServerP {
     provides interface ChatAppServer;
 
     uses interface TcpServer;
+
+    uses interface List<chatroom_user> as users;
 }
 
 implementation {
@@ -10,10 +12,27 @@ implementation {
     }
 
     event void TcpServer.processMessage(uint8_t* messageString) {
-        uint8_t i;
-        for (i = 0; i < 20; i++) {
-            dbg(CHAT_CHANNEL, "%u: %c\n", i, messageString[i]);
+        dbg(CHAT_CHANNEL, "Processing: \"%s\"\n", messageString);
+
+        // If "hello"...
+        if (strncmp(messageString, "hello", 5) == 0) {
+            chatroom_user user;
+            socket_port_t port;
+            uint8_t i;
+            uint8_t name[USERNAME_LIMIT];
+
+            if (sscanf(messageString, "hello %s %u", name, &port) < 2) {
+                dbg(CHAT_CHANNEL, "Invalid 'hello'.\n");
+                return;
+            }
+            
+            strncpy(user.name, name, USERNAME_LIMIT);
+            
+            call users.pushback(user);
+
+            dbg(CHAT_CHANNEL, "[%s] has joined the room. (source: %u) (%u/%u)\n",
+                user.name, port,
+                call users.size(), MAX_ROOM_SIZE);
         }
-        dbg(CHAT_CHANNEL, "Received: \"%s\"\n", messageString);
     }
 }
