@@ -73,7 +73,7 @@ implementation {
                 continue;
             } else {
                 uint8_t readNum;
-                bool empty;
+                bool empty = FALSE;
                 
                 readNum = call Transport.read(client, buff + lastRead, sizeof(buff) - lastRead);
 
@@ -103,6 +103,8 @@ implementation {
                     memmove(buff, buff + j + 1, sizeof(buff) - lastRead);
                     dbg(TRANSPORT_CHANNEL, ">>> %u into %u, %u bytes Now: \"%s\"\n", j + 1, 0, sizeof(buff) - lastRead, buff);
                     lastRead -= j + 1;
+
+                    dbg(TRANSPORT_CHANNEL, ">>> [Whole message processed, buffer emptied]\n");
                 }
             }
         }
