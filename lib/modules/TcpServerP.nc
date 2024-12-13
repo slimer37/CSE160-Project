@@ -48,6 +48,24 @@ implementation {
         return SUCCESS;
     }
 
+    command error_t TcpServer.writeBroadcast(uint8_t* buff, uint8_t len) {
+        uint8_t i;
+        error_t result = SUCCESS;
+
+        for (i = 0; i < numConnections; i++) {
+            socket_t client = clientSockets[i];
+            if (call Transport.write(client, buff, len) < len) {
+                result = FAIL;
+            }
+        }
+
+        return result;
+    }
+
+    command uint8_t TcpServer.writeUnicast(socket_t clientSocket, uint8_t* buff, uint8_t len) {
+        call Transport.write(clientSocket, buff, len);
+    }
+
     event void acceptConnectionTimer.fired() {
         uint8_t i, j;
         socket_t socket = call Transport.accept(serverSocket);

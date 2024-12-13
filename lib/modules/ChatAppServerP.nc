@@ -11,6 +11,21 @@ implementation {
         call TcpServer.startServer(port);
     }
 
+    bool findUserByName(const uint8_t* match, chatroom_user* outUser) {
+        uint8_t i;
+
+        for (i = 0; i < call users.size(); i++) {
+            chatroom_user user = call users.get(i);
+
+            if (strcmp(user.name, match) == 0) {
+                *outUser = user;
+                return TRUE;
+            }
+        }
+
+        return FALSE;
+    }
+
     event void TcpServer.disconnected(socket_t clientSocket) {
         uint8_t i;
 
@@ -51,6 +66,23 @@ implementation {
             dbg(CHAT_CHANNEL, "[%s] has joined the room. (%u/%u)\n",
                 user.name,
                 call users.size(), MAX_ROOM_SIZE);
+        }
+
+        else if (strncmp(messageString, "msg", 3) == 0) {
+            call TcpServer.writeBroadcast(messageString, strlen(messageString));
+        }
+
+        else if (strncmp(messageString, "whisper", 7) == 0) {
+            uint8_t name[USERNAME_LIMIT];
+            chatroom_user user;
+
+            if (sscanf(messageString, "whisper %s %*s", name) < 1) {
+                dbg(CHAT_CHANNEL, "Invalid 'whisper'.\n");
+                return;
+            }
+
+            findUserByName(name, &user);
+            call TcpServer.writeUnicast(user.socket, messageString, strlen(messageString));
         }
     }
 }
