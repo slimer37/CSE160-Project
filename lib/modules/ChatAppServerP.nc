@@ -70,6 +70,7 @@ implementation {
 
         else if (strncmp(messageString, "msg", 3) == 0) {
             call TcpServer.writeBroadcast(messageString, strlen(messageString));
+            call TcpServer.writeBroadcast("\r\n", 2);
         }
 
         else if (strncmp(messageString, "whisper", 7) == 0) {
@@ -83,6 +84,7 @@ implementation {
 
             findUserByName(name, &user);
             call TcpServer.writeUnicast(user.socket, messageString, strlen(messageString));
+            call TcpServer.writeUnicast(user.socket, "\r\n", 2);
         }
     }
 }
