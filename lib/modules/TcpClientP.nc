@@ -21,6 +21,10 @@ implementation {
 
         clientSocket = call Transport.socket();
 
+        if (!clientSocket) {
+            dbg(TRANSPORT_CHANNEL, "Failed to get socket.\n");
+        }
+
         port = srcPort;
 
         socketAddress.port = srcPort;
