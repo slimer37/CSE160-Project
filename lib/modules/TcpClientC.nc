@@ -9,6 +9,6 @@ implementation {
     components TransportC;
     TcpClientP.Transport -> TransportC;
 
-    components new TimerMilliC() as writeTimer;
-    TcpClientP.writeTimer -> writeTimer;
+    components new TimerMilliC() as readyTimer;
+    TcpClientP.readyTimer -> readyTimer;
 }

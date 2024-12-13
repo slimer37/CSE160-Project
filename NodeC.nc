@@ -44,8 +44,6 @@ implementation
 
     components TcpServerC;
     Node.TcpServer -> TcpServerC;
-    components TcpClientC;
-    Node.TcpClient -> TcpClientC;
 
     components TransportC;
     Node.Transport -> TransportC;

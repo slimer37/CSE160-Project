@@ -31,7 +31,6 @@ module Node
     uses interface CommandHandler;
 
     uses interface TcpServer;
-    uses interface TcpClient;
 
     uses interface Transport;
 
@@ -149,8 +148,8 @@ implementation
     }
 
     event void CommandHandler.setTestClient(uint8_t srcPort, uint8_t dest, uint8_t destPort, uint8_t* username) {
-        dbg(GENERAL_CHANNEL, "Joinig with username: %s\n", username);
-        call TcpClient.startClient(srcPort, dest, destPort, username);
+        dbg(CHAT_CHANNEL, "Joining with username: %s\n", username);
+        call ChatAppClient.join(srcPort, dest, destPort, username);
     }
 
     event void CommandHandler.closeSocket(uint8_t srcPort, uint8_t dest, uint8_t destPort) {
