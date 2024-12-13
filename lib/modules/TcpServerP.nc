@@ -127,9 +127,9 @@ implementation {
                 if (!empty) continue;
 
                 if (j < lastRead) {
-                    memmove(buff, buff + j + 1, sizeof(buff) - lastRead);
-                    dbg(TRANSPORT_CHANNEL, ">>> %u into %u, %u bytes Now: \"%s\"\n", j + 1, 0, sizeof(buff) - lastRead, buff);
-                    lastRead -= j + 1;
+                    memmove(buff, buff + j + 2, sizeof(buff) - lastRead);
+                    dbg(TRANSPORT_CHANNEL, ">>> %u into %u, %u bytes Now: \"%s\"\n", j + 2, 0, sizeof(buff) - lastRead, buff);
+                    lastRead -= j + 2;
 
                     dbg(TRANSPORT_CHANNEL, ">>> [Whole message processed, buffer emptied]\n");
                 }
