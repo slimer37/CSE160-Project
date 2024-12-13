@@ -35,6 +35,11 @@ implementation {
         uint8_t name[USERNAME_LIMIT];
         uint8_t message[32];
 
+        if (strncmp(messageString, "listUsrReply", 12) == 0) {
+            dbg(CHAT_CHANNEL, "User list:\n%s\n", messageString + 12);
+            return;
+        }
+
         if (sscanf(messageString, "%*s %s %s", name, message) < 2) {
             dbg(CHAT_CHANNEL, "Couldn't parse: \"%s\"\n", messageString);
             return;

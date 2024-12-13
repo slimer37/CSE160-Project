@@ -124,5 +124,30 @@ implementation {
             call TcpServer.writeUnicast(targetUser.socket, reply, strlen(reply));
             call TcpServer.writeUnicast(targetUser.socket, "\r\n", 2);
         }
+
+        else if (strcmp(messageString, "listusr") == 0) {
+            uint8_t i;
+            uint8_t numUsers = call users.size();
+
+            // Create string of list of users starting with "listUsrReply"
+
+            strcpy(reply, "listUsrReply ");
+
+            for (i = 0; i < numUsers; i++) {
+                chatroom_user user = call users.get(i);
+
+                strcat(reply, user.name);
+
+                if (i < numUsers - 1) {
+                    strcat(reply, "\n");
+                }
+            }
+
+            dbg(CHAT_CHANNEL, "Responding to listusr.\n");
+
+            // Respond with list
+            call TcpServer.writeUnicast(clientSocket, reply, strlen(reply));
+            call TcpServer.writeUnicast(clientSocket, "\r\n", 2);
+        }
     }
 }
