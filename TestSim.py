@@ -170,14 +170,22 @@ def main():
     # s.addChannel(s.TRANSPORT_CHANNEL);
     s.addChannel(s.CHAT_CHANNEL);
 
-    s.runTime(100);
+    s.runTime(1000);
     # s.cmdTestClient(1, 1, 1, 1, 555);
     s.cmdTestServer(9, 5);
-    s.runTime(200);
+    s.runTime(1000);
     # s.routeDMP(9);
     # s.runTime(100);
     s.cmdTestClient(3, 9, 1, 5, "alfred");
-    s.runTime(1000);
+    s.runTime(500);
+    s.cmdTestClient(6, 9, 1, 5, "tanush");
+    s.runTime(500);
+    s.sendChat(6, "msg Hello!\r\n");
+    s.runTime(500);
+    s.sendChat(3, "whisper tanush whisper\r\n");
+    s.runTime(500);
+    s.sendChat(3, "listusr\r\n");
+    s.runTime(500);
     s.cmdClientClose(3, 9, 1, 5);
     # s.cmdTestClient(5, 9, 1, 5, 5);
     # s.runTime(100);
@@ -185,7 +193,7 @@ def main():
     # s.routeDMP(2);
     # s.runTime(100);
     # s.routeDMP(1);
-    s.runTime(1000);
+    s.runTime(2000);
     return
 
     s.runTime(1000);
