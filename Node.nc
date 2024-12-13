@@ -30,11 +30,9 @@ module Node
 
     uses interface CommandHandler;
 
-    uses interface TcpServer;
-
     uses interface Transport;
 
-    // uses interface ChatAppServer;
+    uses interface ChatAppServer;
     uses interface ChatAppClient;
 }
 
@@ -144,7 +142,7 @@ implementation
     }
 
     event void CommandHandler.setTestServer(uint8_t port) {
-        call TcpServer.startServer(port);
+        call ChatAppServer.host(port);
     }
 
     event void CommandHandler.setTestClient(uint8_t srcPort, uint8_t dest, uint8_t destPort, uint8_t* username) {

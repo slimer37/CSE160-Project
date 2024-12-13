@@ -42,14 +42,13 @@ implementation
     Node.LinkStateRouting -> LinkStateRoutingC;
     Node.RoutedSend -> RoutedSendC;
 
-    components TcpServerC;
-    Node.TcpServer -> TcpServerC;
 
     components TransportC;
     Node.Transport -> TransportC;
 
-    // components ChatAppServerC;
-    // Node.ChatAppServer -> ChatAppServerC;
+    components ChatAppServerC;
+    Node.ChatAppServer -> ChatAppServerC;
+    
     components ChatAppClientC;
     Node.ChatAppClient -> ChatAppClientC;
 }
