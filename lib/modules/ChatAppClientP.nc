@@ -40,7 +40,7 @@ implementation {
             return;
         }
 
-        dbg(CHAT_CHANNEL, "\n");
+        dbg(CHAT_CHANNEL, "%s chatlog:\n", clientUsername);
 
         if (strncmp(messageString, "whisper", 7) == 0) {
             dbg(CHAT_CHANNEL, "    %s whispers to you: %s\n", name, message);
