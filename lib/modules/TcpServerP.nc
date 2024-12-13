@@ -94,7 +94,7 @@ implementation {
                         // and process it directly from the buffer
                         buff[j] = '\0';
                         dbg(TRANSPORT_CHANNEL, ">>> Full message: %s\n", buff);
-                        signal TcpServer.processMessage(clientSockets[j], buff);
+                        signal TcpServer.processMessage(client, buff);
 
                         empty = TRUE;
                         break;
