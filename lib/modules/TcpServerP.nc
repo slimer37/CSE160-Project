@@ -63,7 +63,7 @@ implementation {
     }
 
     command uint8_t TcpServer.writeUnicast(socket_t clientSocket, uint8_t* buff, uint8_t len) {
-        call Transport.write(clientSocket, buff, len);
+        return call Transport.write(clientSocket, buff, len);
     }
 
     event void acceptConnectionTimer.fired() {

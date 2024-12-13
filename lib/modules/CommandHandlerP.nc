@@ -88,6 +88,11 @@ implementation{
                 signal CommandHandler.flood(buff[0], &buff[1]);
                 break;
 
+            case CMD_CHAT_COMMAND:
+                dbg(COMMAND_CHANNEL, "Command Type: Chat\n");
+                signal CommandHandler.sendChatCommand(buff);
+                break;
+
             default:
                 dbg(COMMAND_CHANNEL, "CMD_ERROR: \"%d\" does not match any known commands.\n", msg->id);
                 break;

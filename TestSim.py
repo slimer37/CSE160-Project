@@ -18,6 +18,7 @@ class TestSim:
     CMD_TEST_SERVER=5
     CMD_FLOOD_SEND=10
     CMD_CLOSE_SOCK=11
+    CMD_CHAT_COMMAND=12
 
     # CHANNELS - see includes/channels.h
     COMMAND_CHANNEL="command";
@@ -147,6 +148,9 @@ class TestSim:
     
     def cmdClientClose(self, node, dest, srcPort, destPort):
         self.sendCMD(self.CMD_CLOSE_SOCK, node, "{0}{1}{2}".format(chr(srcPort), chr(dest), chr(destPort)));
+    
+    def sendChat(self, node, command):
+        self.sendCMD(self.CMD_CHAT_COMMAND, node, command)
 
     def addChannel(self, channelName, out=sys.stdout):
         print 'Adding Channel', channelName;
