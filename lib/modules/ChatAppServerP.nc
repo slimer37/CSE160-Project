@@ -58,6 +58,7 @@ implementation {
 
     event void TcpServer.processMessage(socket_t clientSocket, uint8_t* messageString) {
         chatroom_user user;
+        uint8_t reply[64];
 
         dbg(CHAT_CHANNEL, "Processing: \"%s\"\n", messageString);
 
@@ -92,10 +93,10 @@ implementation {
                 return;
             }
 
-            sprintf(messageString, "msg %s %s", user.name, message);
+            sprintf(reply, "msg %s %s", user.name, message);
 
-            dbg(CHAT_CHANNEL, "Broadcasting \"%s\"\n", messageString);
-            call TcpServer.writeBroadcast(messageString, strlen(messageString));
+            dbg(CHAT_CHANNEL, "Broadcasting \"%s\"\n", reply);
+            call TcpServer.writeBroadcast(reply, strlen(reply));
             call TcpServer.writeBroadcast("\r\n", 2);
         }
 
@@ -116,11 +117,11 @@ implementation {
 
             findUserBySocket(clientSocket, &user);
 
-            sprintf(messageString, "whisper %s %s", user.name, message);
+            sprintf(reply, "whisper %s %s", user.name, message);
 
-            dbg(CHAT_CHANNEL, "Unicasting \"%s\" to \"%s\"\n", messageString, name);
+            dbg(CHAT_CHANNEL, "Unicasting \"%s\" to \"%s\"\n", reply, name);
 
-            call TcpServer.writeUnicast(targetUser.socket, messageString, strlen(messageString));
+            call TcpServer.writeUnicast(targetUser.socket, reply, strlen(reply));
             call TcpServer.writeUnicast(targetUser.socket, "\r\n", 2);
         }
     }
