@@ -58,17 +58,17 @@ implementation {
         uint8_t writtenLength;
         uint8_t len = strlen(string);
 
-        if (len == 0 || len > SOCKET_BUFFER_SIZE) {
+        if (len == 0 || len > SOCKET_BUFFER_SIZE) { //check size of string
             dbg(TRANSPORT_CHANNEL, "Invalid string length! (was %u)", len);
             return 0;
         }
 
-        writtenLength = call Transport.write(clientSocket, string, len);
+        writtenLength = call Transport.write(clientSocket, string, len); //adds message to connection socket buffer
 
         dbg(TRANSPORT_CHANNEL, "\n");
         dbg(TRANSPORT_CHANNEL, "[CLIENT] Writing characters to transfer: %s\n", string);
 
-        return writtenLength;
+        return writtenLength; //return how many characters were written to buffer
     }
 
     command uint8_t TcpClient.write(uint8_t* buff, uint8_t len) {
@@ -93,7 +93,7 @@ implementation {
                 uint8_t j;
                 bool empty = FALSE;
                 
-                readNum = call Transport.read(clientSocket, buff + lastRead, sizeof(buff) - lastRead);
+                readNum = call Transport.read(clientSocket, buff + lastRead, sizeof(buff) - lastRead); //get how many new characters received
 
                 if (readNum == 0) {
                     return;
@@ -104,7 +104,7 @@ implementation {
                 dbg(TRANSPORT_CHANNEL, "Read %u bytes from client into %u\n", readNum, lastRead);
                 dbg(TRANSPORT_CHANNEL, ">>> \"%s\"\n", buff);
 
-                for (j = lastRead; j < lastRead + readNum - 1; j++) {
+                for (j = lastRead - 1; j < lastRead + readNum - 1; j++) { //
                     // Check for message termination with \r\n
                     if (buff[j] == '\r' && buff[j + 1] == '\n') {
 
@@ -119,14 +119,14 @@ implementation {
                     }
                 }
 
-                lastRead += readNum;
+                lastRead += readNum; //update lastRead to new length of string stored in buffer
 
-                if (!empty) return;
+                if (!empty) return; //if not finished receiving message
 
-                if (j < lastRead) {
-                    memmove(buff, buff + j + 2, sizeof(buff) - lastRead);
+                if (j < lastRead) { //if more characters after \r\n
+                    memmove(buff, buff + j + 2, sizeof(buff) - lastRead); //move everything after \r\n to start of buffer
                     dbg(TRANSPORT_CHANNEL, ">>> %u into %u, %u bytes Now: \"%s\"\n", j + 2, 0, sizeof(buff) - lastRead, buff);
-                    lastRead -= j + 2;
+                    lastRead -= j + 2; //set lastRead to end of new message
 
                     dbg(TRANSPORT_CHANNEL, ">>> [Whole message processed, buffer emptied]\n");
                 }

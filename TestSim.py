@@ -179,6 +179,8 @@ def main():
     s.cmdTestClient(3, 9, 1, 5, "alfred");
     s.runTime(500);
     s.cmdTestClient(6, 9, 1, 5, "tanush");
+    # s.runTime(500);
+    # s.cmdTestClient(10, 9, 2, 5, "jothi");
     s.runTime(500);
     s.sendChat(6, "msg Hello!\r\n");
     s.runTime(500);
@@ -187,6 +189,8 @@ def main():
     s.sendChat(3, "listusr\r\n");
     s.runTime(500);
     s.cmdClientClose(3, 9, 1, 5);
+    s.runTime(500);
+    s.cmdClientClose(6, 9, 1, 5);
     # s.cmdTestClient(5, 9, 1, 5, 5);
     # s.runTime(100);
     # s.runTime(100);
